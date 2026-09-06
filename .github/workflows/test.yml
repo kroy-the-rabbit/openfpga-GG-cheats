@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# The cheap checks, on every push. No Quartus, no container, seconds.
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Provenance and manifests
+        run: make test
+
+      - name: Shell scripts parse
+        run: |
+          for s in tools/podman/*.sh tools/check/*.sh; do
+            bash -n "$s" || exit 1
+          done
+          echo "all scripts parse"
