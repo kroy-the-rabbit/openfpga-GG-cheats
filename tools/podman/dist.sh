@@ -10,11 +10,41 @@
 # Read it rather than hardcoding it, so a rename cannot quietly produce a
 # package the Pocket refuses to load.
 #
-# Nothing here needs the container: the reversal is a byte transform and the
-# rest is file copying.
+# This runs inside the Quartus image, not on the host, and re-executes itself
+# there if it was started outside. The work is only byte transforms and file
+# copying, so the container is not for Quartus: it is so that packaging is the
+# same on a workstation, on any of the four runners and in a shell, rather than
+# depending on what happens to be installed. The first P0 fit compiled cleanly
+# for four minutes and then exited 127 here because a runner had no jq.
+#
+# DIST_NATIVE=1 stays on the host. QUARTUS_ROOTDIR does the same, so a machine
+# with a native toolchain and no podman behaves as it does for build.sh.
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$HERE/../.." && pwd)"
+
+PODMAN=${PODMAN:-podman}
+IMAGE=${IMAGE:-localhost/pocket-quartus:25.1std}
+
+if [[ -z "${DIST_IN_IMAGE:-}" && -z "${DIST_NATIVE:-}" && -z "${QUARTUS_ROOTDIR:-}" ]]; then
+  # keep-id maps the calling user into the container so the package is owned by
+  # whoever asked for it. It only exists in rootless podman, and a build runner
+  # is root, which does not need the mapping. Key the flag on the uid, not on
+  # the machine.
+  USERNS=(--userns=keep-id)
+  if [[ $(id -u) -eq 0 ]]; then USERNS=(); fi
+
+  echo "== dist in $IMAGE"
+  exec $PODMAN run --rm "${USERNS[@]}" --security-opt label=disable \
+    -v "$ROOT:/work" -w /work -e HOME=/tmp \
+    -e DIST_IN_IMAGE=1 \
+    -e BUILD_NAME="${BUILD_NAME:-}" \
+    -e REV="${REV:-}" \
+    -e RELEASE_NAME="${RELEASE_NAME:-}" \
+    "$IMAGE" bash /work/tools/podman/dist.sh
+fi
+
 NAME="${BUILD_NAME:-gg}"
 REV="${REV:-gg_pocket}"
 
@@ -26,10 +56,10 @@ CORE_JSON="$ROOT/pkg/Cores/$CORE_DIR/core.json"
 
 [ -f "$RBF" ] || { echo "no bitstream at $RBF; run 'make gg BUILD_NAME=$NAME' first" >&2; exit 1; }
 
-# perl, not jq. This script runs on the host rather than in the container, and
-# the build runners have no jq: the first P0 fit compiled cleanly and then died
-# here with "jq: command not found" after four minutes of Quartus. perl is
-# already a hard dependency below, for the bit reversal.
+# perl, not jq: the image has no jq, and perl is already a hard dependency
+# below for the bit reversal. Reading two fields with a regex is only safe
+# because this JSON is ours; tools/check/manifests.sh is what actually
+# validates it, and that runs where jq exists.
 BITNAME="$(perl -0777 -ne '
   exit unless /"cores"\s*:\s*\[(.*?)\]/s;
   my $cores = $1;

@@ -43,7 +43,7 @@ gg:
 	STRICT_TIMING=$(STRICT_TIMING) $(HARNESS)/build.sh
 
 dist:
-	REV=$(REV) BUILD_NAME=$(BUILD_NAME) $(HARNESS)/dist.sh
+	PODMAN=$(PODMAN) IMAGE=$(IMAGE) REV=$(REV) BUILD_NAME=$(BUILD_NAME) $(HARNESS)/dist.sh
 
 test:
 	tools/check/provenance.sh

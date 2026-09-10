@@ -116,4 +116,5 @@ GIT_SHA="$GIT_SHA" GIT_DIRTY="$GIT_DIRTY" REV="$REV" "$HERE/report.sh"
 
 # Package last, and only once timing has been checked: report.sh exits 3 on
 # negative slack, so a failing build never produces a zip somebody could ship.
-BUILD_NAME="${BUILD_NAME:-gg}" REV="$REV" RELEASE_NAME="${RELEASE_NAME:-}" "$HERE/dist.sh"
+PODMAN="$PODMAN" IMAGE="$IMAGE" \
+  BUILD_NAME="${BUILD_NAME:-gg}" REV="$REV" RELEASE_NAME="${RELEASE_NAME:-}" "$HERE/dist.sh"

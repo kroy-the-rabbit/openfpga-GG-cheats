@@ -87,10 +87,10 @@ From `PLAN.md` §9, in the order they bite:
 
 1. **A second seed.** Seed 1 on sisko, so `docs/BASELINE.md` has two and any
    later comparison means something. One seed sizes nothing.
-2. **A package.** The first fit produced a bitstream and then died in
-   `dist.sh`, which wanted `jq` and the runners have none. That is fixed and
-   unproven: the next build is what shows `build/gg/dist/` and the release zip
-   actually appear.
+2. **A package.** Done: `b1f08e0` produced `kroy.GG_0.9999.zip`, 460,148
+   bytes. Packaging now re-executes itself inside the Quartus image rather
+   than trusting whatever the host has, after the first fit died on a runner
+   with no `jq`.
 3. **Hardware: a `.gg` from the card boots.** The whole video path, the
    controls and the i2s audio have been reasoned about and never observed.
    Watch the menu's "ROM load errors" readout on the first boot: a non-zero

@@ -14,7 +14,13 @@ bits, 224 pins.
 | commit | seed | ALMs | % | M10K | mem bits | registers | setup | hold | runner | elapsed |
 |---|---|---|---|---|---|---|---|---|---|---|
 | `99f84f4` | 3 | **5,876** | 31.8 | 84 / 308 | 665,792 (21%) | 8,190 | **+1.773** | **+0.075** | sisko2 | 251 s |
+| `b1f08e0` | 3 | 5,876 | 31.8 | 84 / 308 | 665,792 (21%) | 8,190 | +1.773 | +0.075 | sisko2 | 251 s |
 | | 1 | | | | | | | | | |
+
+`b1f08e0` changed only the harness, and at the same seed on the same runner it
+came back identical to the digit, including which corner won. That matches the
+GBA fork's finding that run-to-run variance at one seed on one host is zero and
+the seed is the only knob that moves the number. It is not a second seed.
 
 Other corners at seed 3, all on `clk_sys`:
 
@@ -89,6 +95,10 @@ this design is a fraction of their size.
 
 * **2026-09-10, `99f84f4`.** The first fit compiled cleanly and then exited 127
   in `tools/podman/dist.sh`: the build runners have no `jq`. Four minutes of
-  Quartus, a bitstream on the runner, and no package. `dist.sh` reads the two
-  fields it needs with `perl` now, which it already required for the bit
-  reversal.
+  Quartus, a bitstream on the runner, and no package.
+
+  The fix is not a different JSON reader. `dist.sh` now re-executes itself
+  inside the Quartus image, so packaging runs against one known set of tools
+  wherever it is started: a workstation, any of the four runners, or a shell.
+  It reads the two fields it needs with `perl`, which the image has and which
+  it already required for the bit reversal. `DIST_NATIVE=1` stays on the host.
