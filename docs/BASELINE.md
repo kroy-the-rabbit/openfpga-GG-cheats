@@ -53,11 +53,51 @@ fitted to the number.
 | the Game Gear BIOS RAM should go the same way | **confirmed.** `spram:ext_gg_bios_inst` was synthesized away |
 | the System E second VDP should not be there | **confirmed.** `vdp:vdp2_inst`'s memory was synthesized away |
 | the SMS boot ROM may well survive, because `bootloader_n` is a register | **it did.** Accounting for the 665,792 bits leaves the 16 KB `mboot.mif` in place, and that is the intended reading |
-| the YM2413 should not be there | **not proven either way.** Nothing in the fit report names it, and 5,876 ALMs is small enough to suggest it went, but that is inference. `report.sh` now lifts the by-entity table out of the fitter report so the next build answers it outright |
+| the YM2413 should not be there | **confirmed**, once `report.sh` learned to lift the by-entity table out of the fitter report. See below |
 
 The block memory adds up as: 16 KB of VDP VRAM, 16 KB of work RAM, 32 KB of
-backup RAM and 16 KB of boot ROM, which is 655,360 bits, and about 10 K of
-small FIFOs on top.
+backup RAM and 16 KB of boot ROM, which is 655,360 bits, plus 2,112 bits for
+the ROM load queue and 8,192 for the APF datatable.
+
+### What is actually in the fit
+
+From the by-entity table in `report.txt`, at `6c0a718`. The fitter lists only
+what survived, so this is the answer to the whole strip-by-constant question:
+these six are every direct child of `system` that is left.
+
+| entity | ALMs | share of the design |
+|---|---:|---:|
+| `vdp:vdp_inst` | 3,723.6 | 63% |
+| `T80s:z80_inst` | 1,138.9 | 19% |
+| `jt89:psg_inst` | 152.2 | 3% |
+| `io:io_inst` | 29.7 | 0.5% |
+| `AudioMix:mix` | 5.8 | |
+| `sprom:boot_rom_inst` | 0 | 16 KB of block memory |
+
+and outside the machine:
+
+| entity | ALMs |
+|---|---:|
+| `core_bridge_cmd:icb` | 135.1 |
+| `data_loader:rom_loader` | 89.9 |
+| `sdram:ram` | 51.4 |
+| `dpram:nvram_inst` | 11.3 |
+| `spram:ram_inst` | 1.8 |
+| `pin_ddio_clk:sdram_clk_out` | 0 |
+
+**Nothing else is there.** `opll:fm`, `MC8123_rom_decrypt`, `SEGASYS1_DECT2`,
+`cart_eeprom`, the second `vdp`, `spram:ext_bios_inst` and
+`spram:ext_gg_bios_inst` are all absent from the table. The entities are listed
+in ASCII order by entity name, and `vdp` is present as the last of them, so
+this is absence and not a truncated report: `opll` would sit between `jt89` and
+`sprom`, and it does not.
+
+So tying the constants off in `gg_core.sv` did the whole job, and
+`rtl/upstream/` never had to be edited.
+
+**The VDP is the design.** `vdp_main` alone is 3,279.7 ALMs and `vdp_cram`
+another 331.5. Anything that wants ALMs later should look there first, and the
+obvious lever is `MAX_SPPL`.
 
 ### Knobs not yet turned
 
@@ -65,7 +105,9 @@ Each is a measurement, not a guess, and each wants two seeds:
 
 * **`MAX_SPPL`.** `system` is instantiated at 63, upstream's setting, which is
   what gives the "extra sprites" option a buffer. A Game Gear draws eight
-  sprites per line and 7 would be accurate and smaller.
+  sprites per line and 7 would be accurate and smaller. The by-entity table
+  says this is where the ALMs are: `vdp_main` is 3,280 of the 5,876, more than
+  half the design, and the sprite buffer and its comparators are inside it.
 * **The SMS boot ROM.** 16 KB of block memory for a ROM a Game Gear never
   runs. It stays because `bootloader_n` is a register the fitter cannot fold,
   not because anything needs it.

@@ -10,8 +10,10 @@ The first fit, `99f84f4` at seed 3 on sisko2, came back at **5,876 ALMs, 31.8
 per cent of the device**, 84 of 308 memory blocks, setup +1.773 ns and hold
 +0.075 ns, in 251 seconds. `docs/BASELINE.md` has the numbers and reads them
 against what was predicted before the build. The short version: the port fits
-with two thirds of the device to spare, and the features tied off in
-`gg_core.sv` were removed by the fitter as intended.
+with two thirds of the device to spare, and every feature tied off in
+`gg_core.sv` was removed by the fitter. The by-entity table shows six entities
+left inside `system` and no FM chip, no MC8123, no System E decoder, no second
+VDP and neither BIOS RAM. The VDP is 63 per cent of what remains.
 
 What has not happened: no second seed, no package, and no Pocket has run it.
 
