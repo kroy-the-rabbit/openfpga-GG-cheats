@@ -56,6 +56,21 @@ worst() {  # worst slack for one analysis type across all corners
     echo "---- worst slack per analysis type (all corners) ----"
     for t in Setup Hold Recovery Removal "Minimum Pulse Width"; do worst "$t"; done
   fi
+  # Which entity the ALMs went to. The whole method in docs/BASELINE.md rests
+  # on tying a feature off and checking that the fitter removed it, and the
+  # summary alone cannot answer that. Quartus writes this table into the full
+  # fitter report, which is large and not kept, so the useful rows are lifted
+  # out here.
+  FITRPT="$OUT/$REV.fit.rpt"
+  if [[ -f "$FITRPT" ]]; then
+    entity=$(awk '/Fitter Resource Utilization by Entity/ {f=1} f {print; n++} n>60 {exit}' "$FITRPT")
+    if [[ -n "$entity" ]]; then
+      echo
+      echo "---- resource utilization by entity ----"
+      printf '%s\n' "$entity"
+    fi
+  fi
+
   echo
   echo "---- fit.summary ----"
   cat "$FIT"

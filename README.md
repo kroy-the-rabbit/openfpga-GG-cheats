@@ -12,17 +12,17 @@ cheat engine.
 
 ## Status
 
-**P0 is written and has not run on hardware.** The Quartus project, the Pocket
-side and the manifests exist and pass `make test`; whether the design fits the
-Pocket's Cyclone V, meets timing and boots a `.gg` is what the first builds on
-the runners answer. Phases are in [docs/PLAN.md](docs/PLAN.md).
+**P0 compiles, fits and meets timing. No Pocket has run it.** The port takes
+**5,876 ALMs, a third of the Cyclone V**, with 1.77 ns of setup margin; see
+[docs/BASELINE.md](docs/BASELINE.md). Whether it boots a `.gg` is the next
+thing to find out. Phases are in [docs/PLAN.md](docs/PLAN.md).
 
 | | |
 |---|---|
 | Upstream vendored at `1fc3c121`, verified by `make test` | done |
 | Build harness, the four runners through the orchestrator | done |
-| Quartus project, `core_top.v`, `gg_core.sv`, manifests | written, unbuilt |
-| ROM from the card into SDRAM | written, untested |
+| Quartus project, `core_top.v`, `gg_core.sv`, manifests | fits at 32%, timing met |
+| ROM from the card into SDRAM | written, never run |
 | Saves | **not started** |
 | Cheats | **not started** |
 | Cartridge adapter | **not started** |

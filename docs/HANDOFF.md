@@ -4,9 +4,16 @@ State as of 2026-09-10. Read `PLAN.md` first, then `BASELINE.md`.
 
 ## Where it stands
 
-**P0 is written and has never been compiled.** Everything the phase asks for
-exists and `make test` passes, but Quartus has not seen it: the first fit is
-what says whether it is real.
+**P0 compiles, fits and meets timing. It has never run on hardware.**
+
+The first fit, `99f84f4` at seed 3 on sisko2, came back at **5,876 ALMs, 31.8
+per cent of the device**, 84 of 308 memory blocks, setup +1.773 ns and hold
++0.075 ns, in 251 seconds. `docs/BASELINE.md` has the numbers and reads them
+against what was predicted before the build. The short version: the port fits
+with two thirds of the device to spare, and the features tied off in
+`gg_core.sv` were removed by the fitter as intended.
+
+What has not happened: no second seed, no package, and no Pocket has run it.
 
 What is here:
 
@@ -78,14 +85,17 @@ From `PLAN.md` §9, in the order they bite:
 
 ## Next, in order
 
-1. **Fit it.** Seed 1 on sisko and seed 3 on sisko2 at once, `STANDARD FIT`,
-   and fill in `docs/BASELINE.md` with both. The first build is as likely to
-   be a list of Quartus errors as a number; `make test` checks the paths and
-   the manifests but nothing has elaborated the VHDL.
-2. **Read the fit against `BASELINE.md`'s predictions** before doing anything
-   about the number. The question is whether the constant propagation removed
-   the Master System, and the fitter's RAM summary answers it.
-3. **Hardware: a `.gg` from the card boots.** Then P1.
+1. **A second seed.** Seed 1 on sisko, so `docs/BASELINE.md` has two and any
+   later comparison means something. One seed sizes nothing.
+2. **A package.** The first fit produced a bitstream and then died in
+   `dist.sh`, which wanted `jq` and the runners have none. That is fixed and
+   unproven: the next build is what shows `build/gg/dist/` and the release zip
+   actually appear.
+3. **Hardware: a `.gg` from the card boots.** The whole video path, the
+   controls and the i2s audio have been reasoned about and never observed.
+   Watch the menu's "ROM load errors" readout on the first boot: a non-zero
+   value means the ROM queue overran and the image has holes in it.
+4. Then P1.
 
 ## Rules that hold here as in every sibling
 

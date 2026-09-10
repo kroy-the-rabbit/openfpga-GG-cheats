@@ -26,8 +26,16 @@ CORE_JSON="$ROOT/pkg/Cores/$CORE_DIR/core.json"
 
 [ -f "$RBF" ] || { echo "no bitstream at $RBF; run 'make gg BUILD_NAME=$NAME' first" >&2; exit 1; }
 
-BITNAME="$(jq -r '.core.cores[0].filename' "$CORE_JSON")"
-[ -n "$BITNAME" ] && [ "$BITNAME" != "null" ] || { echo "core.json does not name a bitstream" >&2; exit 1; }
+# perl, not jq. This script runs on the host rather than in the container, and
+# the build runners have no jq: the first P0 fit compiled cleanly and then died
+# here with "jq: command not found" after four minutes of Quartus. perl is
+# already a hard dependency below, for the bit reversal.
+BITNAME="$(perl -0777 -ne '
+  exit unless /"cores"\s*:\s*\[(.*?)\]/s;
+  my $cores = $1;
+  print $1 if $cores =~ /"filename"\s*:\s*"([^"]*)"/;
+' "$CORE_JSON")"
+[ -n "$BITNAME" ] || { echo "core.json does not name a bitstream" >&2; exit 1; }
 
 rm -rf "$OUT"
 mkdir -p "$OUT"
@@ -51,7 +59,11 @@ echo "   Copy the contents of $OUT onto the Pocket's SD card root."
 # A tagged build carries the tag as its version, so the Pocket shows what was
 # actually released rather than whatever the checked-in manifest last said.
 # Stamped into the packaged copy only; the repo manifest is left alone.
-VERSION="$(jq -r '.core.metadata.version' "$CORE_JSON")"
+VERSION="$(perl -0777 -ne '
+  exit unless /"metadata"\s*:\s*\{(.*?)\n  \}/s;
+  my $meta = $1;
+  print $1 if $meta =~ /"version"\s*:\s*"([^"]*)"/;
+' "$CORE_JSON")"
 if [ -n "${RELEASE_NAME:-}" ]; then
   VERSION="${RELEASE_NAME#v}"
   if [ "${#VERSION}" -gt 31 ]; then
@@ -59,9 +71,12 @@ if [ -n "${RELEASE_NAME:-}" ]; then
     exit 1
   fi
   tmp="$(mktemp)"
-  jq --indent 2 --arg v "$VERSION" --arg d "$(date -u +%Y-%m-%d)" \
-     '.core.metadata.version = $v | .core.metadata.date_release = $d' \
-     "$OUT/Cores/$CORE_DIR/core.json" > "$tmp"
+  # "version_required" is left alone: the pattern needs the quote straight
+  # after the key.
+  V="$VERSION" D="$(date -u +%Y-%m-%d)" perl -0777 -pe '
+    s/("version"\s*:\s*)"[^"]*"/$1"$ENV{V}"/;
+    s/("date_release"\s*:\s*)"[^"]*"/$1"$ENV{D}"/;
+  ' "$OUT/Cores/$CORE_DIR/core.json" > "$tmp"
   mv "$tmp" "$OUT/Cores/$CORE_DIR/core.json"
   echo "   stamped   version=$VERSION"
 fi
