@@ -1,0 +1,21 @@
+# ==============================================================================
+# The Pocket side of the core. Pulled in by platform/pocket/pocket.tcl.
+#
+# core_bridge_cmd.v, data_loader.sv, data_unloader.sv, sound_i2s.sv and
+# sync_fifo.sv came from pocket-pcengine/target/pocket/ unchanged; core_top.v
+# is this core's, built on the same template.
+#
+# data_unloader.sv is not instantiated until P1 writes the save slot back out.
+# It is listed so the file that P1 needs is already in the project rather than
+# arriving with the change that uses it.
+# ==============================================================================
+
+set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "core_top.v"]
+set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "core_bridge_cmd.v"]
+set_global_assignment -name SDC_FILE           [file join $::quartus(qip_path) "core_constraints.sdc"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "data_loader.sv"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "data_unloader.sv"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "sound_i2s.sv"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "sync_fifo.sv"]
+set_global_assignment -name QIP_FILE           [file join $::quartus(qip_path) "mf_pllbase.qip"]
+set_global_assignment -name QIP_FILE           [file join $::quartus(qip_path) "pin_ddio_clk.qip"]

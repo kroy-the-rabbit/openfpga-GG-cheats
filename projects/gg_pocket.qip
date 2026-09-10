@@ -1,0 +1,5 @@
+# ==============================================================================
+# Platform-specific third-party modules. Empty: this core has none.
+# The APF framework and the Pocket side come in through pocket.tcl, and the
+# machine through ../rtl/gg.qip.
+# ==============================================================================

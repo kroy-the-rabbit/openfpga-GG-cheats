@@ -236,7 +236,7 @@ fork proved it and its README carries the save warning to copy.
 | `allcomplete` arrives before Reset Exit; do not probe a controller in reset | `pocket-gba/docs/CARTRIDGE.md`, first hardware run |
 | The menu readout is the only console; design the diagnostic word first | `pocket-gba/docs/CARTRIDGE.md`, `CS:` |
 | Every `.sv` a testbench compiles must also be in the qsf | `pocket-cartridge/docs/HANDOFF.md`, `check_qsf_sources.py` |
-| Builds run on sisko or kira through `runner-build`; the image is private; CI verifies the published package | `pocket-dev/docs/HANDOFF.md`, "Release build boundary" |
+| Builds run on the runners through `runner-build`, never locally; the image is private; CI verifies the published package | `pocket-dev/docs/HANDOFF.md`, "Release build boundary" |
 | Merge onto the card, never delete; find it by mount point; unmount after writing a core | `pocket-card-handling` |
 
 ---
@@ -276,8 +276,9 @@ fork proved it and its README carries the save warning to copy.
 | **P3** | **The picker.** `pocket-tools` learns system `gg`: `Assets/gg/common`, the two libretro code shapes decoded to `.chtbin`, the full 818-file census recorded. | Every file in the corpus converts or is refused for a stated reason. |
 | **P4** | **The cartridge.** Adapter bring-up per §7, in `pocket-cartridge` first, then ROM from the cart here with cheats on it. | A Game Gear cartridge dumps and matches No-Intro; then boots here. |
 | **P5** | Master System and SG-1000 packages, PAL reconfig, FM. | Only if §9.3 says so. |
-| **R** | Release `v0.9999.<sha>`: verify-only CI, package built on sisko or kira, signed tag, published by hand. | Same boundary as the other three cores. |
+| **R** | Release `v0.9999.<sha>`: verify-only CI, package built on a runner, signed tag, published by hand. | Same boundary as the other three cores. |
 
 Every phase is a commit with a hardware test and a `report.txt` in
-`docs/BASELINE.md`. A fit is about 20 minutes on the runners, so RTL changes
-are batched, not iterated a line at a time.
+`docs/BASELINE.md`. A fit is 17 to 35 minutes depending on the runner, and
+two seeds run side by side, so RTL changes are batched, not iterated a line
+at a time.

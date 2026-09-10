@@ -1,0 +1,55 @@
+# ==============================================================================
+# The Game Gear machine.
+#
+# Everything under upstream/ is MiSTer-devel/SMS_MiSTer at 1fc3c121, byte for
+# byte, and is never edited (docs/PROVENANCE.md). gg/gg_core.sv is this
+# project's glue around it, in place of MiSTer's SMS.sv.
+#
+# What upstream's own files.qip lists and this does not:
+#
+#   SMS.sv                  the MiSTer top; gg/gg_core.sv replaces it
+#   savestate_ui.sv         MiSTer savestates, instantiated only by SMS.sv
+#   savestates.sv           the same; see docs/PLAN.md 9.4
+#   keyboard.sv             SK-1100, SC-3000 only, instantiated only by SMS.sv
+#   lightgun.sv             gated off in Game Gear mode, only in SMS.sv
+#   compressor.sv           its instantiation in SMS.sv is commented out
+#   hybrid_pwm_sd.v         not instantiated anywhere upstream
+#   pll.qip                 MiSTer's PLL; the Pocket uses target/pocket/mf_pllbase
+#
+# MC8123.v, SEGASYS1_PRGDEC.v and parts.v are System E and a Game Gear has no
+# use for them, but system.vhd instantiates them unconditionally, so they are
+# here to elaborate. gg_core.sv ties `encrypt` and `systeme` to zero and the
+# fitter takes them out. The same goes for the VM2413 FM chip and the SMS boot
+# ROM. What that is worth is measured in docs/BASELINE.md.
+# ==============================================================================
+
+set_global_assignment -name QIP_FILE           [file join $::quartus(qip_path) "upstream/T80/T80.qip"]
+set_global_assignment -name QIP_FILE           [file join $::quartus(qip_path) "upstream/VM2413/OPLL.qip"]
+set_global_assignment -name QIP_FILE           [file join $::quartus(qip_path) "upstream/jt89/jt89.qip"]
+
+set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "upstream/MC8123.v"]
+set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "upstream/SEGASYS1_PRGDEC.v"]
+set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "upstream/parts.v"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "upstream/sdram.sv"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "upstream/cheatcodes.sv"]
+
+set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) "upstream/video.vhd"]
+set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) "upstream/sprom.vhd"]
+set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) "upstream/spram.vhd"]
+set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) "upstream/dpram.vhd"]
+set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) "upstream/vdp_sprites.vhd"]
+set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) "upstream/vdp_sprite_shifter.vhd"]
+set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) "upstream/vdp_main.vhd"]
+set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) "upstream/vdp_cram.vhd"]
+set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) "upstream/vdp_background.vhd"]
+set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) "upstream/vdp.vhd"]
+set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) "upstream/system.vhd"]
+set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) "upstream/eeprom_93c46.vhd"]
+set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) "upstream/cart_eeprom.vhd"]
+set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) "upstream/io.vhd"]
+set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) "upstream/AudioMix.vhd"]
+
+set_global_assignment -name MIF_FILE           [file join $::quartus(qip_path) "upstream/nvram_ff.mif"]
+set_global_assignment -name MIF_FILE           [file join $::quartus(qip_path) "upstream/mboot.mif"]
+
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "gg/gg_core.sv"]

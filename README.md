@@ -12,19 +12,25 @@ cheat engine.
 
 ## Status
 
-**Framework only. Nothing builds yet.** The repository holds the vendored
-upstream, the build harness, and the plan. The first phase that produces a
-bitstream is P0 in [docs/PLAN.md](docs/PLAN.md).
+**P0 is written and has not run on hardware.** The Quartus project, the Pocket
+side and the manifests exist and pass `make test`; whether the design fits the
+Pocket's Cyclone V, meets timing and boots a `.gg` is what the first builds on
+the runners answer. Phases are in [docs/PLAN.md](docs/PLAN.md).
 
 | | |
 |---|---|
 | Upstream vendored at `1fc3c121`, verified by `make test` | done |
-| Build harness, sisko/kira through the orchestrator | done, untested until P0 |
-| Quartus project, `core_top.sv`, manifests | **not started** |
-| ROM from the card | **not started** |
+| Build harness, the four runners through the orchestrator | done |
+| Quartus project, `core_top.v`, `gg_core.sv`, manifests | written, unbuilt |
+| ROM from the card into SDRAM | written, untested |
 | Saves | **not started** |
 | Cheats | **not started** |
 | Cartridge adapter | **not started** |
+
+The Game Gear runs at 160 x 144, which the Pocket's 1600 x 1440 display shows
+at exactly ten times, so there is one video mode and no scaling to argue with.
+Master System and SG-1000 come out of the same RTL and are a scope decision
+rather than a technical one; nothing here is built for them yet.
 
 ## Documents
 
@@ -33,11 +39,13 @@ bitstream is P0 in [docs/PLAN.md](docs/PLAN.md).
 | [docs/PLAN.md](docs/PLAN.md) | what is being built, from what, in what order, and the lessons the sibling cores paid for |
 | [docs/PROVENANCE.md](docs/PROVENANCE.md) | where `rtl/upstream/` comes from and the rule that it is never edited |
 | [docs/HANDOFF.md](docs/HANDOFF.md) | where the work stands |
+| [docs/BASELINE.md](docs/BASELINE.md) | what every build measured, and what the first one was expected to say |
 
 ## Build
 
-    make gg        build -> build/gg/          (no project yet; P0)
-    make test      rtl/upstream matches docs/upstream.sha256
+    make gg        build -> build/gg/
+    make test      provenance, Quartus project paths, APF manifests
+    make dist      package a flashable core -> build/gg/dist/
     make report    re-read an existing build's utilisation and slack
 
 Quartus runs only on the controlled builders through the orchestrator's

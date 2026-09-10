@@ -17,17 +17,18 @@
 #   make compare A=gg B=baseline   resource and timing delta between two builds
 #   make clean                  remove build/
 #
-# Builds run on sisko or kira through the orchestrator's runner-build. CI
-# never builds: .github/workflows/release.yml verifies the published package.
+# Builds run on the runners through the orchestrator's runner-build, never
+# here (docs/HANDOFF.md, "Runners"). CI never builds: .github/workflows/release.yml verifies the published package.
 #
-#   tools/check/provenance.sh        rtl/upstream is byte for byte MiSTer's
+#   make test                   provenance, project file paths, APF manifests
 
 PODMAN  ?= podman
-# Repeatable timing closure. AUTO FIT, which the qsf asks for, lowers effort as
-# soon as it believes timing is achievable, and on this design the worst hold
-# path has about a tenth of a nanosecond of margin. At the same seed, AUTO FIT
-# landed it at -0.025 ns and STANDARD FIT at +0.109 ns. Override with an empty
-# value to build the way upstream does. See docs/BASELINE.md.
+# Repeatable timing closure. AUTO FIT lowers effort as soon as it believes
+# timing is achievable, which on the sibling cores moved the answer by 0.4 ns
+# and spread 0.5 ns across seeds for no reason the design could explain, while
+# STANDARD FIT agreed to a picosecond. Nothing here has been measured yet; the
+# qsf asks for STANDARD FIT too, so this only matters if it is overridden.
+# See docs/BASELINE.md.
 FITTER_EFFORT ?= STANDARD FIT
 IMAGE   ?= localhost/pocket-quartus:25.1std
 REV     ?= gg_pocket
@@ -46,6 +47,8 @@ dist:
 
 test:
 	tools/check/provenance.sh
+	tools/check/project.sh
+	tools/check/manifests.sh
 
 report:
 	REV=$(REV) BUILD_NAME=$(BUILD_NAME) $(HARNESS)/report.sh

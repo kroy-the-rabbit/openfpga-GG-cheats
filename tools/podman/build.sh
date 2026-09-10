@@ -44,11 +44,11 @@ NP=${NPROC:-ALL}
 sed -i "s/^set_global_assignment -name NUM_PARALLEL_PROCESSORS .*$/set_global_assignment -name NUM_PARALLEL_PROCESSORS $NP/" "$QSF"
 echo "== parallel processors $NP"
 
-# The checked-in qsf turns SignalTap on and names stp1.stp, which does not exist
-# next to the project (the only .stp in the tree is target/pocket/stp1.stp, a
-# leftover from another core: it names ap_core.sof and SNES signal sets).
-# NO_SIGNALTAP=1 takes the instrumentation out entirely so the utilisation
-# number is the core's own. Default is upstream's setting, untouched.
+# The checked-in qsf has SignalTap off and no .stp is in the tree, because an
+# instrumented build is not the one whose utilisation belongs in
+# docs/BASELINE.md. NO_SIGNALTAP=1 is kept for the case where one is added
+# temporarily to chase something on hardware: it takes the instrumentation back
+# out without editing the qsf.
 if [[ -n "${NO_SIGNALTAP:-}" ]]; then
   sed -i 's/^set_global_assignment -name ENABLE_SIGNALTAP ON$/set_global_assignment -name ENABLE_SIGNALTAP OFF/' "$QSF"
   sed -i '/^set_global_assignment -name USE_SIGNALTAP_FILE/d; /^set_global_assignment -name SIGNALTAP_FILE/d' "$QSF"

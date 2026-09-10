@@ -1,0 +1,9 @@
+# ==============================================================================
+# Quartus Prime Project File -- Pocket Game Gear core
+# ==============================================================================
+
+QUARTUS_VERSION = "18.1"
+
+# Revisions
+
+PROJECT_REVISION = "gg_pocket"
