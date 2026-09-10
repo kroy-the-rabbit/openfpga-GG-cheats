@@ -13,8 +13,9 @@ cheat engine.
 ## Status
 
 **P0 is done: it fits, meets timing on two seeds, and a `.gg` boots on a
-Pocket.** The port takes **5,865 to 5,876 ALMs, a third of the Cyclone V**;
-see [docs/BASELINE.md](docs/BASELINE.md). Phases are in
+Pocket with video, audio, controls and the ROM load diagnostic all confirmed
+clean.** The port takes **5,865 to 5,876 ALMs, a third of the Cyclone V**; see
+[docs/BASELINE.md](docs/BASELINE.md). Phases are in
 [docs/PLAN.md](docs/PLAN.md).
 
 | | |

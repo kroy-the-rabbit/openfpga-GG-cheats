@@ -4,29 +4,24 @@ State as of 2026-09-10. Read `PLAN.md` first, then `BASELINE.md`.
 
 ## Where it stands
 
-**P0 compiles, fits and meets timing. It has never run on hardware.**
+**P0 is done.** It compiles, fits within margin on two seeds, meets timing, and
+every hardware check has come back clean: video, audio, controls and the ROM
+load diagnostic.
 
-The first fit, `99f84f4` at seed 3 on sisko2, came back at **5,876 ALMs, 31.8
-per cent of the device**, 84 of 308 memory blocks, setup +1.773 ns and hold
-+0.075 ns, in 251 seconds. `docs/BASELINE.md` has the numbers and reads them
-against what was predicted before the build. The short version: the port fits
-with two thirds of the device to spare, and every feature tied off in
-`gg_core.sv` was removed by the fitter. The by-entity table shows six entities
-left inside `system` and no FM chip, no MC8123, no System E decoder, no second
-VDP and neither BIOS RAM. The VDP is 63 per cent of what remains.
+The fit: two seeds in `docs/BASELINE.md`, **5,865 to 5,876 ALMs, about 32 per
+cent of the device**, 84 of 308 memory blocks. The by-entity table shows six
+entities left inside `system` and no FM chip, no MC8123, no System E decoder,
+no second VDP and neither BIOS RAM: every feature tied off in `gg_core.sv` was
+removed by the fitter, as the plan meant it to be. The VDP is 63 per cent of
+what remains.
 
-**A `.gg` boots on hardware, and the picture is right.** P0's exit criterion
-in `docs/PLAN.md` is met on both halves: two seeds in `BASELINE.md` and a game
-running on a Pocket, 2026-09-10. Two screenshots taken a second apart
-(`Memories/Screenshots/20260910_150121.png`, `...150124.png`) show a top-down
-RPG in a walled corridor: correct colours, clean sprites, no tearing or
-corruption. That is the VDP's BGR444-to-RGB conversion, the video output
-stage's one-cycle hs/vs pulses and the 5.369318 MHz pixel clock all working as
-reasoned in `gg_core.sv`, not just simulated.
-
-Not yet confirmed: audio, controls beyond whatever moved the character between
-those two frames, and whether the menu's `RQ:` readout reads
-zero.
+The hardware, 2026-09-10, a game running from `Assets/gg/common`: the picture
+is right (`Memories/Screenshots/20260910_150121.png`, `...150124.png` on the
+card, correct colour, clean sprites, no tearing), audio works, controls work,
+and `RQ:` reads `0x00000000` — the ROM queue never overran loading this ROM.
+That readout only worked after a fix: its first label, "ROM load errors", was
+long enough to wrap the hex value off screen. `docs/BASELINE.md` has the
+detail.
 
 What is here:
 
@@ -98,18 +93,21 @@ From `PLAN.md` §9, in the order they bite:
 
 ## Next, in order
 
-1. **A second seed.** Done: seed 1 came back at 5,865 ALMs against seed 3's
-   5,876, and the SDRAM and video-crossing paths both close. `BASELINE.md` has
-   the comparison.
-2. **A package.** Done: `b1f08e0` produced `kroy.GG_0.9999.zip`, 460,148
-   bytes. Packaging now re-executes itself inside the Quartus image rather
-   than trusting whatever the host has, after the first fit died on a runner
-   with no `jq`.
-3. **Hardware: a `.gg` from the card boots.** The whole video path, the
-   controls and the i2s audio have been reasoned about and never observed.
-   Watch the menu's `RQ:` readout on the first boot: a non-zero
-   value means the ROM queue overran and the image has holes in it.
-4. Then P1.
+P0 is closed: two seeds, a package, and every hardware check clean. P1 is
+saves, per `docs/PLAN.md`:
+
+1. **Cart RAM out through the save slot.** `gg_core.sv` already has the second
+   port of `nvram_inst` wired to `bram_addr`/`bram_din`/`bram_wr`/`bram_dout`
+   and idle (`core_top.v` ties them to zero); a `data_loader` in and a
+   `data_unloader` out on exit is what P1 adds. `data_unloader.sv` is already
+   copied into `target/pocket/` for this.
+2. **The 93C46 EEPROM.** A second save case, and `mapper_eeprom_out` from
+   `system` is already available to gate it.
+3. **The save slot in `data.json`**, `nonvolatile: true`, and the datatable
+   write in `core_top.v` that is currently disarmed (§"Nothing to declare
+   yet", the comment where `datatable_wren` is tied to zero).
+4. **A save survives closing the core and a power cycle**, for one RAM game
+   and one EEPROM game, is P1's exit criterion.
 
 ## Rules that hold here as in every sibling
 

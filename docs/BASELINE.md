@@ -156,11 +156,18 @@ already exists.
 2026-09-10, on a Pocket, from `Assets/gg/common`: a top-down RPG boots and
 renders correctly. `Memories/Screenshots/20260910_150121.png` and
 `...150124.png` on the card show correct colour, clean sprite rendering and no
-tearing. Audio and controls confirmed working. The `RQ:` readout could not be
-read: the label "ROM load errors" was long enough to push the hex value off
-screen, wrapping to just "0x". Fixed by shortening the label to `RQ:`,
-matching the short-diagnostic-name pattern `pocket-gba` already paid for
-(`CG:`, `CS:`, `SF:`, `EE:`). Not yet re-checked on hardware.
+tearing. Audio and controls confirmed working.
+
+The `RQ:` readout first could not be read at all: its label, "ROM load
+errors", was long enough to push the hex value off screen, wrapping to just
+"0x". Fixed by shortening it to `RQ:`, matching the short-diagnostic-name
+pattern `pocket-gba` already paid for (`CG:`, `CS:`, `SF:`, `EE:`). Re-checked
+after the fix: **`RQ:` reads `0x00000000`.** The 64-entry queue in
+`gg_core.sv` never overran loading this ROM, so the byte-per-eight-clk_sys
+SDRAM writer kept up with the APF loader's bursts as designed.
+
+Every hardware check P0 set out to make now passes: video, audio, controls,
+and the diagnostic that would have caught a corrupted load.
 
 ## Method
 
