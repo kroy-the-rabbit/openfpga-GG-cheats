@@ -28,7 +28,28 @@ SD="${1:-$(findmnt -rn -o TARGET | grep -E "^/run/media/$USER/" | head -1 || tru
 [[ -n "$SD" && -d "$SD" ]] || { echo "no SD card mounted; pass the mount point" >&2; exit 1; }
 [[ -d "$SD/Cores" && -d "$SD/Platforms" ]] || {
   echo "$SD has no Cores/ and Platforms/, so it is not a Pocket card" >&2; exit 1; }
-[[ -d "$SRC" ]] || { echo "no package at $SRC; run 'make dist BUILD_NAME=$NAME' first" >&2; exit 1; }
+# Builds run on the runners, and `runner-build fetch` brings back the release
+# zip rather than the dist tree that made it. The zip is laid out to unpack
+# straight onto the card, so unpack it here and flash that: one entry point
+# whether the package was built on this machine or fetched from a runner.
+if [[ ! -d "$SRC" ]]; then
+  zips=("$REPO/build/$NAME"/*.zip)
+  if [[ -f "${zips[0]}" ]]; then
+    [[ ${#zips[@]} -eq 1 ]] || {
+      echo "more than one zip in build/$NAME; unpack the one you want to $SRC" >&2
+      printf '  %s\n' "${zips[@]}" >&2
+      exit 1
+    }
+    echo "== unpacking $(basename "${zips[0]}")"
+    mkdir -p "$SRC"
+    unzip -q -o "${zips[0]}" -d "$SRC"
+  fi
+fi
+
+[[ -d "$SRC" ]] || {
+  echo "no package at $SRC and no zip in build/$NAME." >&2
+  echo "Build on a runner and fetch it, or run 'make dist BUILD_NAME=$NAME'." >&2
+  exit 1; }
 
 if [[ -f "$REPO/build/$NAME/TIMING_FAILED" && -z "${FLASH_ANYWAY:-}" ]]; then
   echo "build/$NAME missed timing and is not fit to flash." >&2
@@ -37,12 +58,35 @@ if [[ -f "$REPO/build/$NAME/TIMING_FAILED" && -z "${FLASH_ANYWAY:-}" ]]; then
 fi
 
 CORE="$(ls "$SRC/Cores")"
-RBF="$(cd "$SRC/Cores/$CORE" && ls -- *.rbf_r *.rev 2>/dev/null | head -1)"
-[[ -n "$RBF" ]] || { echo "no bitstream in $SRC/Cores/$CORE" >&2; exit 1; }
+
+# nullglob so a pattern with no match vanishes instead of ls treating it as a
+# literal filename and failing: this core ships .rbf_r, a sibling ships .rev,
+# and under `set -e -o pipefail` a failing ls took the whole script down even
+# though the bitstream it needed was right there.
+shopt -s nullglob
+cands=("$SRC/Cores/$CORE"/*.rbf_r "$SRC/Cores/$CORE"/*.rev)
+shopt -u nullglob
+[[ ${#cands[@]} -gt 0 ]] || { echo "no bitstream in $SRC/Cores/$CORE" >&2; exit 1; }
+RBF="$(basename -- "${cands[0]}")"
 
 echo "== flashing $CORE ($RBF) onto $SD"
-rsync -rt --no-perms --no-owner --no-group --exclude .gitkeep --itemize-changes \
+
+# Platforms/_images/ is shared: every core that declares a platform id points
+# at the same file, so overwriting one here changes what every other core on
+# the card shows. --ignore-existing on that directory alone means a real image
+# already on the card is never replaced by a placeholder shipped here; a
+# platform this repo is first to add still gets its image copied in.
+# FLASH_PLATFORM_IMAGES=1 overrides, for the day pkg/Platforms/_images holds a
+# real one and it is meant to replace what is there.
+PLATIMG=()
+[[ -n "${FLASH_PLATFORM_IMAGES:-}" ]] || PLATIMG=(--ignore-existing)
+
+rsync -rt --no-perms --no-owner --no-group --exclude .gitkeep \
+      --exclude Platforms/_images/ --itemize-changes \
       "$SRC/" "$SD/" | grep -E '^[>c]' || true
+rsync -rt --no-perms --no-owner --no-group "${PLATIMG[@]}" --itemize-changes \
+      "$SRC/Platforms/_images/" "$SD/Platforms/_images/" \
+      | grep -E '^[>c]' | sed 's|^\([><c][a-zA-Z.+]*\) |\1 Platforms/_images/|' || true
 sync
 
 a="$(sha256sum "$SRC/Cores/$CORE/$RBF" | cut -c1-16)"
