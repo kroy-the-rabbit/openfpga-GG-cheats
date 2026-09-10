@@ -63,7 +63,9 @@ worst() {  # worst slack for one analysis type across all corners
   # out here.
   FITRPT="$OUT/$REV.fit.rpt"
   if [[ -f "$FITRPT" ]]; then
-    entity=$(awk '/Fitter Resource Utilization by Entity/ {f=1} f {print; n++} n>60 {exit}' "$FITRPT")
+    # Anchor on the boxed section title, not the table of contents near the top
+    # of the report, which names every section and matched first.
+    entity=$(awk '/^; Fitter Resource Utilization by Entity/ {f=1} f {print; n++} n>80 {exit}' "$FITRPT")
     if [[ -n "$entity" ]]; then
       echo
       echo "---- resource utilization by entity ----"
