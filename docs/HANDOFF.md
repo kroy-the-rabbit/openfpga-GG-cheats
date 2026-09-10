@@ -15,9 +15,11 @@ with two thirds of the device to spare, and every feature tied off in
 left inside `system` and no FM chip, no MC8123, no System E decoder, no second
 VDP and neither BIOS RAM. The VDP is 63 per cent of what remains.
 
-What has not happened: **no Pocket has run it.** Two seeds fit and a package
-builds; every claim about the video path, the controls and the audio is
-reasoning, not observation.
+**A `.gg` boots on hardware.** P0's exit criterion in `docs/PLAN.md` is now
+met on both halves: two seeds in `BASELINE.md` and a game running on a Pocket.
+Not yet confirmed: which game, whether the picture and audio are right, and
+whether the menu's "ROM load errors" readout is zero. Every one of those is
+still reasoning until it is looked at directly.
 
 What is here:
 
