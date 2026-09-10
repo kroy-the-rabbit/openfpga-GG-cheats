@@ -11,16 +11,49 @@ bits, 224 pins.
 
 ## P0, the stripped port
 
-| commit | seed | ALMs | % | M10K | mem bits | registers | setup | hold | runner | elapsed |
-|---|---|---|---|---|---|---|---|---|---|---|
-| `99f84f4` | 3 | **5,876** | 31.8 | 84 / 308 | 665,792 (21%) | 8,190 | **+1.773** | **+0.075** | sisko2 | 251 s |
-| `b1f08e0` | 3 | 5,876 | 31.8 | 84 / 308 | 665,792 (21%) | 8,190 | +1.773 | +0.075 | sisko2 | 251 s |
-| | 1 | | | | | | | | | |
+All four builds are the same RTL: only docs and the harness moved between
+them.
 
-`b1f08e0` changed only the harness, and at the same seed on the same runner it
-came back identical to the digit, including which corner won. That matches the
-GBA fork's finding that run-to-run variance at one seed on one host is zero and
-the seed is the only knob that moves the number. It is not a second seed.
+| commit | seed | ALMs | % | M10K | mem bits | registers | worst setup | worst hold | elapsed |
+|---|---|---|---|---|---|---|---|---|---|
+| `99f84f4` | 3 | 5,876 | 31.8 | 84 / 308 | 665,792 | 8,190 | +1.773 `clk_sys` | +0.075 `clk_sys` | 251 s |
+| `b1f08e0` | 3 | 5,876 | 31.8 | 84 / 308 | 665,792 | 8,190 | +1.773 `clk_sys` | +0.075 `clk_sys` | 251 s |
+| `6c0a718` | 3 | 5,876 | 31.8 | 84 / 308 | 665,792 | 8,190 | +1.773 `clk_sys` | +0.075 `clk_sys` | 251 s |
+| `f8bd256` | 1 | **5,865** | 31.7 | 84 / 308 | 665,792 | 8,188 | **+2.852** `sdram_clk` | **+0.136** `clk_74a` | 232 s |
+
+All on sisko2.
+
+**Seed 3 against seed 1: 11 ALMs and 1.24 ns.** The three seed-3 builds are
+identical to the digit, including which corner won, so run-to-run variance at
+one seed on one runner is zero here as it is on the GBA fork. The seed is the
+only knob that moved anything.
+
+The 1.24 ns is on `clk_sys`, which went +1.773 at seed 3 to +3.012 at seed 1,
+and it is larger than the 497 ps the GBA fork saw. That fork lived at 97 per
+cent occupancy where the router has no choices left; at 32 per cent it has
+plenty, and more freedom is more spread. Neither seed is anywhere near an edge,
+so this is a note for later rather than a problem.
+
+Per clock at seed 1, worst corner:
+
+| clock | setup |
+|---|---|
+| `sdram_clk` | +2.852 |
+| `clk_sys` 53.693181 MHz | +3.012 |
+| `clk_74a` | +3.287 |
+| `clk_vid` 5.369318 MHz | +8.345 |
+| `bridge_spiclk` | +11.154 |
+
+Two of those answer questions this file asked before the first build:
+
+* **The SDRAM interface closes.** `sdram_clk` is analysed, not ignored, and it
+  is the worst corner at seed 1 with 2.85 ns in hand. The output and input
+  delays in `core_constraints.sdc` were guesses from the data sheet class of
+  part and they are not tight.
+* **The clk_sys to clk_vid crossing is real and passes.** Putting the PLL
+  outputs in one clock group rather than three asynchronous ones was so that
+  the analyser would look at the once-per-pixel handover into the video output
+  stage. It does, and there is 8.3 ns of margin.
 
 Other corners at seed 3, all on `clk_sys`:
 
@@ -39,8 +72,8 @@ whole life at 96 to 97 per cent occupancy where "a fit is a lottery ticket";
 this is not that design. The cheat engine, its overlay and the cartridge front
 end have somewhere to go.
 
-Only one seed has run. The second is what makes any later comparison mean
-anything, and it has not been done.
+Two seeds have run and agree to 11 ALMs, so a later change that moves the
+number by more than that has moved something real.
 
 ### The predictions, and what the fit said
 

@@ -15,7 +15,9 @@ with two thirds of the device to spare, and every feature tied off in
 left inside `system` and no FM chip, no MC8123, no System E decoder, no second
 VDP and neither BIOS RAM. The VDP is 63 per cent of what remains.
 
-What has not happened: no second seed, no package, and no Pocket has run it.
+What has not happened: **no Pocket has run it.** Two seeds fit and a package
+builds; every claim about the video path, the controls and the audio is
+reasoning, not observation.
 
 What is here:
 
@@ -87,8 +89,9 @@ From `PLAN.md` §9, in the order they bite:
 
 ## Next, in order
 
-1. **A second seed.** Seed 1 on sisko, so `docs/BASELINE.md` has two and any
-   later comparison means something. One seed sizes nothing.
+1. **A second seed.** Done: seed 1 came back at 5,865 ALMs against seed 3's
+   5,876, and the SDRAM and video-crossing paths both close. `BASELINE.md` has
+   the comparison.
 2. **A package.** Done: `b1f08e0` produced `kroy.GG_0.9999.zip`, 460,148
    bytes. Packaging now re-executes itself inside the Quartus image rather
    than trusting whatever the host has, after the first fit died on a runner

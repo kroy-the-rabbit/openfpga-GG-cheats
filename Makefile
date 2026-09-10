@@ -15,6 +15,7 @@
 #   make report                 regenerate build/gg/report.txt from existing outputs
 #   make shell                  interactive shell in the Quartus container
 #   make compare A=gg B=baseline   resource and timing delta between two builds
+#   make flash                  merge build/gg/dist onto the mounted Pocket card
 #   make clean                  remove build/
 #
 # Builds run on the runners through the orchestrator's runner-build, never
@@ -34,7 +35,7 @@ IMAGE   ?= localhost/pocket-quartus:25.1std
 REV     ?= gg_pocket
 HARNESS := tools/podman
 
-.PHONY: gg dist report compare shell clean test
+.PHONY: gg dist report compare shell clean test flash
 
 gg:
 	PODMAN=$(PODMAN) IMAGE=$(IMAGE) REV=$(REV) SEED=$(SEED) BUILD_NAME=$(BUILD_NAME) \
@@ -52,6 +53,9 @@ test:
 
 report:
 	REV=$(REV) BUILD_NAME=$(BUILD_NAME) $(HARNESS)/report.sh
+
+flash:
+	BUILD_NAME=$(BUILD_NAME) tools/flash.sh $(SD)
 
 shell:
 	$(PODMAN) run --rm -it --userns=keep-id --security-opt label=disable \
