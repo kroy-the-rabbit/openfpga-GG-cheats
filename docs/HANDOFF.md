@@ -15,11 +15,18 @@ with two thirds of the device to spare, and every feature tied off in
 left inside `system` and no FM chip, no MC8123, no System E decoder, no second
 VDP and neither BIOS RAM. The VDP is 63 per cent of what remains.
 
-**A `.gg` boots on hardware.** P0's exit criterion in `docs/PLAN.md` is now
-met on both halves: two seeds in `BASELINE.md` and a game running on a Pocket.
-Not yet confirmed: which game, whether the picture and audio are right, and
-whether the menu's "ROM load errors" readout is zero. Every one of those is
-still reasoning until it is looked at directly.
+**A `.gg` boots on hardware, and the picture is right.** P0's exit criterion
+in `docs/PLAN.md` is met on both halves: two seeds in `BASELINE.md` and a game
+running on a Pocket, 2026-09-10. Two screenshots taken a second apart
+(`Memories/Screenshots/20260910_150121.png`, `...150124.png`) show a top-down
+RPG in a walled corridor: correct colours, clean sprites, no tearing or
+corruption. That is the VDP's BGR444-to-RGB conversion, the video output
+stage's one-cycle hs/vs pulses and the 5.369318 MHz pixel clock all working as
+reasoned in `gg_core.sv`, not just simulated.
+
+Not yet confirmed: audio, controls beyond whatever moved the character between
+those two frames, and whether the menu's "ROM load errors" readout reads
+zero.
 
 What is here:
 

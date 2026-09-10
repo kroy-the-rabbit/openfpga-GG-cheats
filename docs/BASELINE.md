@@ -151,6 +151,14 @@ None of them are worth spending a build on while a third of the device is in
 use. They are written down so that the day something does not fit, the list
 already exists.
 
+## Hardware
+
+2026-09-10, on a Pocket, from `Assets/gg/common`: a top-down RPG boots and
+renders correctly. `Memories/Screenshots/20260910_150121.png` and
+`...150124.png` on the card show correct colour, clean sprite rendering and no
+tearing. Not yet checked: audio, controls, and the menu's "ROM load errors"
+readout.
+
 ## Method
 
     R=../tools/runner-build
