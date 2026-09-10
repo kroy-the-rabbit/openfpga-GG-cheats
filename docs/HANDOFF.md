@@ -25,7 +25,7 @@ stage's one-cycle hs/vs pulses and the 5.369318 MHz pixel clock all working as
 reasoned in `gg_core.sv`, not just simulated.
 
 Not yet confirmed: audio, controls beyond whatever moved the character between
-those two frames, and whether the menu's "ROM load errors" readout reads
+those two frames, and whether the menu's `RQ:` readout reads
 zero.
 
 What is here:
@@ -62,7 +62,7 @@ Three things in it are worth knowing before changing anything:
    `ioctl_wait`; APF's `data_loader` has no backpressure at all, so bytes
    arrive in bursts of four faster than the SDRAM controller can take them.
    `gg_core.sv` buffers 64 of them and sets a sticky flag if that is ever not
-   enough, which the menu reads back as "ROM load errors". A non-zero value
+   enough, which the menu reads back at `RQ:`. A non-zero value
    there means the loaded ROM has holes in it.
 2. **The SDRAM reference clock changes during a load.** Upstream drives the
    controller's `clkref` from the CPU clock enable, which is one transaction
@@ -107,7 +107,7 @@ From `PLAN.md` §9, in the order they bite:
    with no `jq`.
 3. **Hardware: a `.gg` from the card boots.** The whole video path, the
    controls and the i2s audio have been reasoned about and never observed.
-   Watch the menu's "ROM load errors" readout on the first boot: a non-zero
+   Watch the menu's `RQ:` readout on the first boot: a non-zero
    value means the ROM queue overran and the image has holes in it.
 4. Then P1.
 

@@ -156,8 +156,11 @@ already exists.
 2026-09-10, on a Pocket, from `Assets/gg/common`: a top-down RPG boots and
 renders correctly. `Memories/Screenshots/20260910_150121.png` and
 `...150124.png` on the card show correct colour, clean sprite rendering and no
-tearing. Not yet checked: audio, controls, and the menu's "ROM load errors"
-readout.
+tearing. Audio and controls confirmed working. The `RQ:` readout could not be
+read: the label "ROM load errors" was long enough to push the hex value off
+screen, wrapping to just "0x". Fixed by shortening the label to `RQ:`,
+matching the short-diagnostic-name pattern `pocket-gba` already paid for
+(`CG:`, `CS:`, `SF:`, `EE:`). Not yet re-checked on hardware.
 
 ## Method
 

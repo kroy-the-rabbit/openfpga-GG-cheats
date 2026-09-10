@@ -37,7 +37,7 @@
         "value": "0x00000001"
       },
       {
-        "name": "ROM load errors",
+        "name": "RQ:",
         "id": 90,
         "type": "number_u32",
         "enabled": true,
