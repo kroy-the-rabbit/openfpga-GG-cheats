@@ -251,7 +251,11 @@ fork proved it and its README carries the save warning to copy.
    first push.
 3. **Scope.** Game Gear only, or SMS and SG-1000 too? The RTL is the same;
    the cost is a package, a picker system and a `video.json` per platform,
-   plus PAL reconfig for SMS. Deferred to after P0 measures.
+   plus PAL reconfig for SMS. Kroy's direction as of 2026-09-11: SMS is
+   planned, ROM-loaded from the card like Game Gear, with no physical cart
+   adapter for SMS (unlike P4's Game Gear cartridge). Still not started;
+   this is what will make P1's EEPROM path testable on real hardware, since
+   every EEPROM-detected title is an SMS exclusive.
 4. **Savestates.** Carry MiSTer's `savestates.sv` or drop it for APF sleep and
    savestates as `pocket-gba` does? Decide on the P0 measurement: it is
    1684 lines and MiSTer-shaped.
@@ -271,7 +275,7 @@ fork proved it and its README carries the save warning to copy.
 |---|---|---|
 | **F** | **Framework.** This repo, the harness, the vendored upstream with provenance, the plan, registration in pocket-dev. | **Done 2026-09-05.** Nothing builds yet. |
 | **P0** | **The port boots.** Quartus project for 5CEBA4F23C8; `core_top.sv` with the APF bridge; PLL; SDRAM controller; a ROM slot into SDRAM; `system.vhd` in Game Gear mode; 160 x 144 out; PSG through i2s; `pkg/Cores/kroy.GG` manifests; §1 strip list applied. | A `.gg` from the card boots on a Pocket. `docs/BASELINE.md` has two seeds at `STANDARD FIT`. |
-| **P1** | **Saves.** Cart RAM and 93C46 EEPROM out through the save slot on exit; sleep. | A save survives closing the core and a power cycle, for one RAM game and one EEPROM game. |
+| **P1** | **Saves.** Cart RAM and 93C46 EEPROM out through the save slot on exit; sleep. | A save survives closing the core and a power cycle, for one RAM game. No Game Gear cartridge exercises the EEPROM path: `mapper_eeprom`'s CRC list is Master System exclusives only (World Series Baseball, The Majors Pro Baseball). That path stays code-reviewed, not hardware-tested, until P5 adds Master System. |
 | **P2** | **Cheats.** Cheats slot, `cheat_binloader`, `CODES` restructured per §5, `cheat_poker` into work RAM, `interact.json` master switch and overlay toggle, `cheat_osd` at 160 x 144. | One Game Genie code and one Pro Action Replay code each take effect on hardware, off at startup, enable from the file. |
 | **P3** | **The picker.** `pocket-tools` learns system `gg`: `Assets/gg/common`, the two libretro code shapes decoded to `.chtbin`, the full 818-file census recorded. | Every file in the corpus converts or is refused for a stated reason. |
 | **P4** | **The cartridge.** Adapter bring-up per §7, in `pocket-cartridge` first, then ROM from the cart here with cheats on it. | A Game Gear cartridge dumps and matches No-Intro; then boots here. |
