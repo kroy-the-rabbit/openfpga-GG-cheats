@@ -223,3 +223,11 @@ this design is a fraction of their size.
   wherever it is started: a workstation, any of the four runners, or a shell.
   It reads the two fields it needs with `perl`, which the image has and which
   it already required for the bit reversal. `DIST_NATIVE=1` stays on the host.
+
+* **2026-09-11, `f224504`.** The first P1 flash put P0 back on the card.
+  `flash.sh` only unpacked the fetched zip when `build/gg/dist` was absent,
+  and a dist tree from the P0 flash was still there, so the P1 zip was never
+  opened: the card got P0's bitstream and a `data.json` with no save slot,
+  and the save test failed for a reason that had nothing to do with the RTL.
+  Found by checksum: the card's `gg.rbf_r` matched the stale tree, not the
+  zip. `flash.sh` now re-unpacks whenever the zip is newer than the tree.

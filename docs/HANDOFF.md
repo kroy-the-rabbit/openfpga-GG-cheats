@@ -1,6 +1,6 @@
 # Handoff
 
-State as of 2026-09-10. Read `PLAN.md` first, then `BASELINE.md`.
+State as of 2026-09-11. Read `PLAN.md` first, then `BASELINE.md`.
 
 ## Where it stands
 
@@ -112,8 +112,10 @@ built or run:
    met on both; `docs/BASELINE.md` has the numbers. Hold margin is the
    tightest this project has produced, 0.068 to 0.072 ns, and worth a glance
    if a later change tightens it further. The seed-3 build is on the Pocket's
-   card now. The exit criterion, a save surviving closing the core and a
-   power cycle, is still open and needs one RAM game: `Defenders of Oasis`,
+   card, verified by checksum against the zip; the first attempt flashed P0
+   again, see `BASELINE.md`, "Things the harness got wrong". The exit
+   criterion, a save surviving closing the core and a power cycle, is still
+   open and needs one RAM game: `Defenders of Oasis`,
    `Sylvan Tale`, `Crystal Warriors`, and `Phantasy Star Gaiden` are all
    confirmed battery-save Game Gear titles (MAME's `gamegear.xml` software
    list) and all four are in Kroy's ROM set. There is no EEPROM game to test

@@ -32,18 +32,21 @@ SD="${1:-$(findmnt -rn -o TARGET | grep -E "^/run/media/$USER/" | head -1 || tru
 # zip rather than the dist tree that made it. The zip is laid out to unpack
 # straight onto the card, so unpack it here and flash that: one entry point
 # whether the package was built on this machine or fetched from a runner.
-if [[ ! -d "$SRC" ]]; then
-  zips=("$REPO/build/$NAME"/*.zip)
-  if [[ -f "${zips[0]}" ]]; then
-    [[ ${#zips[@]} -eq 1 ]] || {
-      echo "more than one zip in build/$NAME; unpack the one you want to $SRC" >&2
-      printf '  %s\n' "${zips[@]}" >&2
-      exit 1
-    }
-    echo "== unpacking $(basename "${zips[0]}")"
-    mkdir -p "$SRC"
-    unzip -q -o "${zips[0]}" -d "$SRC"
-  fi
+#
+# A zip newer than the dist tree replaces it. The first P1 flash did not do
+# this: a dist tree left over from P0 sat beside the freshly fetched P1 zip,
+# the zip was never opened, and the card got P0 again while every doc said P1.
+zips=("$REPO/build/$NAME"/*.zip)
+if [[ -f "${zips[0]}" && ( ! -d "$SRC" || "${zips[0]}" -nt "$SRC" ) ]]; then
+  [[ ${#zips[@]} -eq 1 ]] || {
+    echo "more than one zip in build/$NAME; unpack the one you want to $SRC" >&2
+    printf '  %s\n' "${zips[@]}" >&2
+    exit 1
+  }
+  echo "== unpacking $(basename "${zips[0]}") over $SRC"
+  rm -rf "$SRC"
+  mkdir -p "$SRC"
+  unzip -q -o "${zips[0]}" -d "$SRC"
 fi
 
 [[ -d "$SRC" ]] || {
