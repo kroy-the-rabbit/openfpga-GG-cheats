@@ -34,7 +34,7 @@ What is here:
 | `target/pocket/mf_pllbase` | 74.25 MHz in, 53.693181 MHz and 5.369318 MHz x2 out |
 | `rtl/gg/gg_core.sv` | the machine, in place of MiSTer's `SMS.sv` |
 | `rtl/gg.qip` | what of `rtl/upstream/` the project compiles, and what it leaves out |
-| `pkg/Cores/kroy.GG/` | the manifests. One data slot, one video mode, three menu items |
+| `pkg/Cores/kroy.GG/` | the manifests. Two data slots (cartridge, save), one video mode, three menu items |
 | `tools/check/project.sh` | every path the project names resolves |
 | `tools/check/manifests.sh` | the APF rules the siblings paid to learn |
 
@@ -94,20 +94,23 @@ From `PLAN.md` §9, in the order they bite:
 ## Next, in order
 
 P0 is closed: two seeds, a package, and every hardware check clean. P1 is
-saves, per `docs/PLAN.md`:
+saves, per `docs/PLAN.md`, and the RTL and manifests are written but not yet
+built or run:
 
-1. **Cart RAM out through the save slot.** `gg_core.sv` already has the second
-   port of `nvram_inst` wired to `bram_addr`/`bram_din`/`bram_wr`/`bram_dout`
-   and idle (`core_top.v` ties them to zero); a `data_loader` in and a
-   `data_unloader` out on exit is what P1 adds. `data_unloader.sv` is already
-   copied into `target/pocket/` for this.
-2. **The 93C46 EEPROM.** A second save case, and `mapper_eeprom_out` from
-   `system` is already available to gate it.
-3. **The save slot in `data.json`**, `nonvolatile: true`, and the datatable
-   write in `core_top.v` that is currently disarmed (§"Nothing to declare
-   yet", the comment where `datatable_wren` is tied to zero).
-4. **A save survives closing the core and a power cycle**, for one RAM game
-   and one EEPROM game, is P1's exit criterion.
+1. **Done.** Cart RAM out through the save slot: `core_top.v` has a
+   `save_data_loader`/`save_data_unloader` pair on `gg_core.sv`'s second
+   `nvram_inst` port, muxed by `save_download_s` so the loader owns the bus
+   while the slot streams in and the unloader owns it otherwise.
+2. **Done, and for free.** The 93C46 EEPROM shares `nvram_inst` with cart RAM
+   inside `system.vhd` already (`nvram_a` muxes between them), so the one
+   save slot above covers both without `core_top.v` ever reading
+   `mapper_eeprom_out`.
+3. **Done.** `data.json` declares a `"Save"` slot, id 2, `nonvolatile: true`,
+   `0x8000` (the whole `nvram_inst`, cart RAM and EEPROM both), and
+   `core_top.v`'s datatable write reports that size once `pll_core_locked`.
+4. **Not started.** Needs a build: this has not been fit or run since these
+   changes. Then the exit criterion, a save surviving closing the core and a
+   power cycle, for one RAM game and one EEPROM game.
 
 ## Rules that hold here as in every sibling
 

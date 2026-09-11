@@ -64,7 +64,7 @@ module gg_core (
     // ---- diagnostics ------------------------------------------------------
     output wire        rom_overrun,    // sticky: the ROM queue was overrun
 
-    // ---- backup RAM, second port, for the save slot at P1 ------------------
+    // ---- backup RAM, second port, driven by the save slot ------------------
     input  wire [14:0] bram_addr,
     input  wire  [7:0] bram_din,
     input  wire        bram_wr,
@@ -356,8 +356,11 @@ wire  [7:0] nvram_d;
 wire        nvram_we;
 wire  [7:0] nvram_q;
 
-// Port B is the save slot's, idle until P1. The init file is upstream's, which
-// fills cart RAM with FF the way an unwritten chip reads.
+// Port B is the save slot's: core_top.v loads it in at boot and reads it back
+// out when the core exits. Cart RAM and the 93C46 EEPROM share this one
+// block (system.vhd muxes nvram_a between them), so one save slot covers
+// both without this file caring which a cartridge uses. The init file is
+// upstream's, which fills cart RAM with FF the way an unwritten chip reads.
 dpram #(.widthad_a(15), .init_file("rtl/nvram_ff.mif")) nvram_inst (
     .clock_a  (clk_sys),
     .address_a(nvram_a),

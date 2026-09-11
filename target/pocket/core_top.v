@@ -325,7 +325,7 @@ module core_top (
         bridge_rd_data <= 0;
       end
       32'h2xxxxxxx: begin
-        bridge_rd_data <= 32'h0;  // save slot read-back arrives at P1
+        bridge_rd_data <= save_rd_data;
       end
       32'hF0xxxxxx: begin
         bridge_rd_data <= settings_rd_data;
@@ -517,18 +517,24 @@ module core_top (
   end
 
   wire cart_download_74 = any_download && dataslot_requestwrite_id == 16'd1;
+  wire save_download_74 = any_download && dataslot_requestwrite_id == 16'd2;
 
-  // Nothing to declare yet. The datatable is where a core tells APF how many
-  // bytes of a nonvolatile slot to write back when the core exits, and this
-  // one has no such slot until P1: data.json declares only the cartridge.
-  //
-  // Declaring a save slot before there is anything driving it would be worse
-  // than not having one. APF would read the slot's contents back out over the
-  // bridge on exit and write whatever it got to the card, over a real save.
-  always @(posedge clk_74a) begin
-    datatable_addr <= 10'd0;
-    datatable_data <= 32'd0;
-    datatable_wren <= 1'b0;
+  // The datatable is where a core tells APF how many bytes of a nonvolatile
+  // slot to write back when the core exits. data.json's Save slot is the
+  // second entry (index 1), and the table addresses each slot at index*2+1;
+  // the size is fixed at the nvram_inst dpram's whole 32 KB, cart RAM and the
+  // 93C46 EEPROM's 128 bytes both, since both live in the one block and a
+  // game only ever drives one of them.
+  always @(posedge clk_74a or negedge pll_core_locked) begin
+    if (~pll_core_locked) begin
+      datatable_addr <= 10'd0;
+      datatable_data <= 32'd0;
+      datatable_wren <= 1'b0;
+    end else begin
+      datatable_addr <= 1 * 2 + 1;
+      datatable_data <= 32'h8000;
+      datatable_wren <= 1'b1;
+    end
   end
 
   // ==========================================================================
@@ -556,6 +562,7 @@ module core_top (
   wire pll_core_locked_s;
   wire reset_n_s;
   wire cart_download_s;
+  wire save_download_s;
   wire [15:0] cont1_key_s;
   wire region_jp_s, sp64_s;
   wire reset_delay_s;
@@ -563,6 +570,7 @@ module core_top (
   synch_3 s_locked (pll_core_locked, pll_core_locked_s, clk_sys);
   synch_3 s_resetn (reset_n, reset_n_s, clk_sys);
   synch_3 s_dl (cart_download_74, cart_download_s, clk_sys);
+  synch_3 s_svdl (save_download_74, save_download_s, clk_sys);
   synch_3 s_rstd (reset_delay > 0, reset_delay_s, clk_sys);
   synch_3 #(16) s_cont1 (cont1_key, cont1_key_s, clk_sys);
   synch_3 #(2) s_set ({region_jp, sp64}, {region_jp_s, sp64_s}, clk_sys);
@@ -599,6 +607,71 @@ module core_top (
       .write_addr(ioctl_addr),
       .write_data(ioctl_dout)
   );
+
+  // ==========================================================================
+  // Save RAM, in and out
+  //
+  // gg_core's nvram_inst is one 32 KB dpram behind cart RAM and the 93C46
+  // EEPROM alike (system.vhd muxes the two onto the same bus), so one loader
+  // and one unloader on the whole block covers both save kinds without this
+  // file knowing which one a given cartridge uses.
+  //
+  // The two never run at once: the loader only drives the bus while APF is
+  // still streaming the save slot in at boot (save_download_s), and the
+  // unloader only reads it back out when the core exits. save_download_s
+  // picks which one owns bram_addr.
+  // ==========================================================================
+  wire [31:0] save_rd_data;
+
+  wire save_ld_wr;
+  wire [14:0] save_ld_addr;
+  wire [7:0] save_ld_data;
+
+  wire save_ul_rd;
+  wire [14:0] save_ul_addr;
+
+  data_loader #(
+      .ADDRESS_MASK_UPPER_4 (4'h2),
+      .ADDRESS_SIZE         (15),
+      .OUTPUT_WORD_SIZE     (1),
+      .WRITE_MEM_CLOCK_DELAY(4)
+  ) save_data_loader (
+      .clk_74a   (clk_74a),
+      .clk_memory(clk_sys),
+
+      .bridge_wr           (bridge_wr),
+      .bridge_endian_little(bridge_endian_little),
+      .bridge_addr         (bridge_addr),
+      .bridge_wr_data      (bridge_wr_data),
+
+      .write_en  (save_ld_wr),
+      .write_addr(save_ld_addr),
+      .write_data(save_ld_data)
+  );
+
+  data_unloader #(
+      .ADDRESS_MASK_UPPER_4(4'h2),
+      .ADDRESS_SIZE        (15),
+      .INPUT_WORD_SIZE     (1),
+      .READ_MEM_CLOCK_DELAY(4)
+  ) save_data_unloader (
+      .clk_74a   (clk_74a),
+      .clk_memory(clk_sys),
+
+      .bridge_rd           (bridge_rd),
+      .bridge_endian_little(bridge_endian_little),
+      .bridge_addr         (bridge_addr),
+      .bridge_rd_data      (save_rd_data),
+
+      .read_en  (save_ul_rd),
+      .read_addr(save_ul_addr),
+      .read_data(bram_dout)
+  );
+
+  wire [14:0] bram_addr = save_download_s ? save_ld_addr : save_ul_addr;
+  wire bram_wr = save_download_s & save_ld_wr;
+  wire [7:0] bram_din = save_ld_data;
+  wire [7:0] bram_dout;
 
   // ==========================================================================
   // Controls
@@ -656,10 +729,10 @@ module core_top (
 
       .rom_overrun(rom_overrun),
 
-      .bram_addr(15'd0),
-      .bram_din (8'd0),
-      .bram_wr  (1'b0),
-      .bram_dout(),
+      .bram_addr(bram_addr),
+      .bram_din (bram_din),
+      .bram_wr  (bram_wr),
+      .bram_dout(bram_dout),
 
       .dram_a    (dram_a),
       .dram_ba   (dram_ba),
