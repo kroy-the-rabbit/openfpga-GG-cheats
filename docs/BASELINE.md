@@ -151,6 +151,28 @@ None of them are worth spending a build on while a third of the device is in
 use. They are written down so that the day something does not fit, the list
 already exists.
 
+## P1, the save slot
+
+One seed so far, `0c8d2af` on sisko2, a functional check rather than a
+baseline: two seeds before this number means anything the way P0's does.
+
+| commit | seed | ALMs | % | M10K | mem bits | registers | worst setup | worst hold | elapsed |
+|---|---|---|---|---|---|---|---|---|---|
+| `0c8d2af` | 1 | 6,067 | 32.8 | 84 / 308 | 665,792 | 8,795 | +2.551 `sdram_clk` | +0.068 `divclk` | 278 s |
+
+**+191 to +202 ALMs over P0's two seeds, no new block memory.** The by-entity
+table accounts for it directly: `data_loader:save_data_loader` is 70.7 ALMs
+and `data_unloader:save_data_unloader` is 79.8, the pair the save slot added
+to `core_top.v`. Block memory bits are unchanged at 665,792 because the save
+RAM was already `nvram_inst`, counted into that number since P0; the slot
+reads and writes the block that was already there rather than adding one.
+
+Hold margin, 0.068 ns, is the tightest number this project has produced. It
+is still positive, and it is one seed: P0's own hold numbers ranged 0.075 to
+0.136 ns across two seeds on the same design, so this is in the range seed
+noise already produces here, not evidence of anything closing in on the
+device. A second seed would say which.
+
 ## Hardware
 
 2026-09-10, on a Pocket, from `Assets/gg/common`: a top-down RPG boots and
