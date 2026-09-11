@@ -108,10 +108,12 @@ built or run:
 3. **Done.** `data.json` declares a `"Save"` slot, id 2, `nonvolatile: true`,
    `0x8000` (the whole `nvram_inst`, cart RAM and EEPROM both), and
    `core_top.v`'s datatable write reports that size once `pll_core_locked`.
-4. **Fits.** One seed on sisko2, `0c8d2af`: 6,067 ALMs, 32.8%, timing met.
-   `docs/BASELINE.md` has the number. Not yet run on hardware. The exit
-   criterion is still open: a save surviving closing the core and a power
-   cycle, for one RAM game and one EEPROM game.
+4. **Fits.** Two seeds, 6,057 to 6,067 ALMs, 32.8%, timing met on both;
+   `docs/BASELINE.md` has the numbers. Hold margin is the tightest this
+   project has produced, 0.068 to 0.072 ns, and worth a glance if a later
+   change tightens it further. Not yet run on hardware. The exit criterion is
+   still open: a save surviving closing the core and a power cycle, for one
+   RAM game and one EEPROM game.
 
 ## Rules that hold here as in every sibling
 

@@ -153,25 +153,31 @@ already exists.
 
 ## P1, the save slot
 
-One seed so far, `0c8d2af` on sisko2, a functional check rather than a
-baseline: two seeds before this number means anything the way P0's does.
+Two seeds, both on the same RTL as `f224504`'s docs-only diff from
+`0c8d2af`.
 
-| commit | seed | ALMs | % | M10K | mem bits | registers | worst setup | worst hold | elapsed |
-|---|---|---|---|---|---|---|---|---|---|
-| `0c8d2af` | 1 | 6,067 | 32.8 | 84 / 308 | 665,792 | 8,795 | +2.551 `sdram_clk` | +0.068 `divclk` | 278 s |
+| commit | seed | runner | ALMs | % | M10K | mem bits | registers | worst setup | worst hold | elapsed |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `0c8d2af` | 1 | sisko2 | 6,067 | 32.8 | 84 / 308 | 665,792 | 8,795 | +2.551 `sdram_clk` | +0.068 `divclk` | 278 s |
+| `f224504` | 3 | sisko | 6,057 | 32.8 | 84 / 308 | 665,792 | 8,846 | +1.962 `sdram_clk` | +0.072 `divclk` | 277 s |
 
-**+191 to +202 ALMs over P0's two seeds, no new block memory.** The by-entity
+**Seed 3 against seed 1: 10 ALMs, 0.589 ns setup, 0.004 ns hold.** Same
+pattern as P0: the seed is the only knob that moved, and the two agree
+closely.
+
+**+180 to +200 ALMs over P0's two seeds, no new block memory.** The by-entity
 table accounts for it directly: `data_loader:save_data_loader` is 70.7 ALMs
-and `data_unloader:save_data_unloader` is 79.8, the pair the save slot added
-to `core_top.v`. Block memory bits are unchanged at 665,792 because the save
-RAM was already `nvram_inst`, counted into that number since P0; the slot
-reads and writes the block that was already there rather than adding one.
+and `data_unloader:save_data_unloader` is 79.8 at seed 1, the pair the save
+slot added to `core_top.v`. Block memory bits are unchanged at 665,792
+because the save RAM was already `nvram_inst`, counted into that number
+since P0; the slot reads and writes the block that was already there rather
+than adding one.
 
-Hold margin, 0.068 ns, is the tightest number this project has produced. It
-is still positive, and it is one seed: P0's own hold numbers ranged 0.075 to
-0.136 ns across two seeds on the same design, so this is in the range seed
-noise already produces here, not evidence of anything closing in on the
-device. A second seed would say which.
+Hold margin, 0.068 to 0.072 ns, is the tightest this project has produced,
+and now confirmed at two seeds rather than resting on one: P0's own hold
+numbers ranged 0.075 to 0.136 ns across its two seeds, so P1 sits just below
+that range, consistently, not as noise. Still positive on both corners
+checked; worth a glance if a later change tightens it further.
 
 ## Hardware
 
