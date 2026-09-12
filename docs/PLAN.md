@@ -133,9 +133,9 @@ So:
    carries no names, so its rows read `CHEAT nn`. `pocket-dev/docs/HANDOFF.md`
    records it under "GBA cheats changed shape". This core is at 36.7% ALMs, the
    roomiest of the set, so the fitting argument against an on-FPGA parser is
-   weaker here than anywhere. What is not yet decided is whether that parser
-   gets written, or whether this core's `.chtbin` carries names instead and
-   keeps the one verified decode in one place, is §9.8.
+   weaker here than anywhere. Whether that parser gets written, or this core's
+   `.chtbin` carries names instead and keeps the one verified decode in one
+   place, is §9.8.
 
    Here the decode runs on the host: the picker's converter decodes Game Genie to
    the 128-bit `CODES` word and writes `.chtbin`, and `cheat_binloader.sv`
