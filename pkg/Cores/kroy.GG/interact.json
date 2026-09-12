@@ -88,6 +88,20 @@
         "type": "number_u32",
         "enabled": true,
         "address": "0xF0000210"
+      },
+      {
+        "name": "CF:",
+        "id": 95,
+        "type": "number_u32",
+        "enabled": true,
+        "address": "0xF0000214"
+      },
+      {
+        "name": "CT:",
+        "id": 96,
+        "type": "number_u32",
+        "enabled": true,
+        "address": "0xF0000218"
       }
     ],
     "messages": []

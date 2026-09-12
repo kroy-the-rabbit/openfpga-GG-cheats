@@ -124,7 +124,8 @@ saves took:
    `PLAN.md` §9.4 decides whether that is APF sleep, MiSTer savestates, or
    neither.
 
-P2 is cheats, and stage 1 of three is built and fitted:
+P2 is cheats. Stages 1 and 3 are done and stage 2 is half done: the `.cht`
+reader is written and cross-checked, the overlay it feeds is not:
 
 1. **Done, fitted, not yet on hardware.** Both mechanisms are wired. Work RAM
    became a `dpram` so `cheat_poker` can write Pro Action Replay pokes on port
@@ -135,18 +136,41 @@ P2 is cheats, and stage 1 of three is built and fitted:
    seeds, 6,779 to 6,792 ALMs, 36.7%, and timing improved rather than
    degraded; `BASELINE.md` has the numbers and explains why the block memory
    went *down* by 8 KB.
-2. **Not started: the overlay.** `cheat_font.sv` and `cheat_titles.sv` are
-   byte-identical between the two siblings and port unchanged.
-   `cheat_osd.sv`'s native panel is 156x144, sized for the Game Boy's raster,
-   which is this machine's too; take the PC Engine copy for its `COL0`/`ROW0`
-   inset. `interact.json` has no overlay switch yet on purpose, and
-   `0xF000010C` is already reserved for it in `core_top.v`.
-3. **Done, on the host side.** `tools/cheats/cht2bin.py` writes the `.chtbin`
+2. **Half done: the `.cht` reader is in, the overlay is not.**
+   `rtl/gg/cheat_loader.sv` parses a plain libretro `.cht` into both
+   mechanisms, and `core_top.v` sniffs the first four bytes for "GGCH" to
+   choose between it and `cheat_binloader.sv`. Both readers see every byte and
+   only their outputs are muxed, which is safe because the verdict lands at
+   byte four and neither can emit before then.
+
+   What shaped the module: `cheatN_enable` comes *after* `cheatN_code`, and
+   `CODES` cannot withdraw a code once clocked in, so a cheat's entries are
+   buffered and pushed only once its enable state is known. That is
+   `pocket-gba`'s two-bank buffer, not `pocket-pcengine`'s commit-and-roll-back,
+   which only works on a table that is an array and a count.
+
+   `tools/sim/run.py` is the gate on it: Icarus runs the RTL over every corpus
+   file and diffs the pushed entries and the parsed titles against
+   `tools/cheats/gg2bin.py`. **818 files, two passes each, 0 mismatches.** Both
+   end-of-file paths are covered, the download's falling edge and the idle
+   timer. It needs Icarus and a corpus, so it is not in `make test`:
+
+       CHT_DB="$HOME/.config/retroarch/cheats/Sega - Game Gear" tools/sim/run.py
+       tools/sim/run.py --idle
+
+   `cheat_titles.sv` is wired and holds the names. `cheat_osd.sv` is what is
+   left: its native panel is 156x144, sized for the Game Boy's raster, which is
+   this machine's too, so take the PC Engine copy for its `COL0`/`ROW0` inset.
+   `interact.json` still has no overlay switch on purpose and `0xF000010C` is
+   reserved for it. Until the overlay exists `CT:` is the only view of the title
+   store: it reads the first character and the length of the first cheat's name,
+   off a read port the overlay will take over.
+3. **Done, on the host side.** `tools/cheats/gg2bin.py` writes the `.chtbin`
    that `cheat_binloader.sv` reads, both code kinds. All 818 libretro Game Gear
    files convert with no crash and 7,133 entries. The Game Genie decode is in
-   `tools/cheats/verify_genie.py`, which doubles as the check against a ROM
-   set; `PLAN.md` S4 records the evidence. `tools/check/cheats.sh` asserts the
-   field positions against the RTL's documented layout and is in `make test`.
+   `tools/cheats/ggcht.py`, which doubles as the check against a ROM set;
+   `PLAN.md` S4 records the evidence. `tools/check/cheats.sh` asserts the field
+   positions against the RTL's documented layout and is in `make test`.
    Untested on hardware, which needs the overlay above to be worth using.
 
 ## Rules that hold here as in every sibling

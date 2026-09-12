@@ -59,6 +59,13 @@ by decision.
 `pocket-gba`'s: the magic interlock, the byte counter, the shift register and
 the two-state sequencer.
 
+`rtl/gg/cheat_loader.sv` is the same kind of thing. The keyword lexer and the
+two-bank deferred-push buffer are `pocket-gba`'s, which took the lexer in turn
+from the GB/GBC fork; the title streaming is `pocket-pcengine`'s, whose
+`desc_*` ports already matched `cheat_titles`. The tokeniser is new, because no
+sibling has this machine's two code formats or a Game Genie address that is a
+permutation of its digits.
+
 The picker keeps byte-identical copies of each core's host-side decoder and
 `make sync-check` there compares them, so this repository's are named to sit
 beside the existing ones without collision: `tools/cheats/ggcht.py` beside

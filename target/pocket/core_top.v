@@ -399,11 +399,17 @@ module core_top (
         32'hF0000200: settings_rd_data <= {31'd0, rom_overrun_74};
         // Cheats, same idea: a file that loaded nothing and a file that never
         // arrived look identical on a handheld with no console. CC: is what
-        // the loader took, CD: what the header declared, CB: bytes seen.
+        // reached the Game Genie table, CD: cheats taken from a .cht or entries
+        // declared by a .chtbin header, CB: bytes seen. CF: which reader
+        // claimed the file, and CT: the first character and the length of the
+        // first cheat's name, which is the only view of the title store until
+        // the overlay exists.
         32'hF0000204: settings_rd_data <= {26'd0, cheat_count_74};
         32'hF0000208: settings_rd_data <= {26'd0, cheat_decl_74};
         32'hF000020C: settings_rd_data <= {12'd0, cheat_bytes_74};
         32'hF0000210: settings_rd_data <= {31'd0, cheat_overrun_74};
+        32'hF0000214: settings_rd_data <= {31'd0, cheat_is_bin_74};
+        32'hF0000218: settings_rd_data <= {21'd0, title_len_74, title_char_74};
         default: settings_rd_data <= 32'd0;
       endcase
     end
@@ -623,6 +629,16 @@ module core_top (
   synch_3 #(20) s_cb (cheat_bytes, cheat_bytes_74, clk_74a);
   synch_3 s_co (cheat_overrun, cheat_overrun_74, clk_74a);
 
+  wire cheat_is_bin;
+  wire [5:0] title_char;
+  wire [4:0] title_len;
+  wire cheat_is_bin_74;
+  wire [5:0] title_char_74;
+  wire [4:0] title_len_74;
+  synch_3 s_cf (cheat_is_bin, cheat_is_bin_74, clk_74a);
+  synch_3 #(6) s_tc (title_char, title_char_74, clk_74a);
+  synch_3 #(5) s_tl (title_len, title_len_74, clk_74a);
+
   // ==========================================================================
   // ROM in
   // ==========================================================================
@@ -652,11 +668,16 @@ module core_top (
   // ==========================================================================
   // Cheats in
   //
-  // One slot feeds both mechanisms. cheat_binloader splits the file: an entry
-  // with bit 127 set is a Pro Action Replay poke and goes to cheat_poker's
-  // table inside gg_core, and every other entry is a Game Genie code clocked
-  // into system.vhd's CODES. The decode that turns XXX-XXX-XXX into a word is
-  // on the host, in tools/cheats; see rtl/gg/cheat_binloader.sv.
+  // One slot, two readers, both mechanisms. The slot takes a plain libretro
+  // .cht or the packed .chtbin that tools/cheats/gg2bin.py writes, and the
+  // first four bytes decide which reader owns the file. Either way an entry
+  // bound for work RAM goes to cheat_poker's table inside gg_core and every
+  // other entry is a Game Genie code clocked into system.vhd's CODES.
+  //
+  // Both are shipped for the reason pocket-gba ships both: a .chtbin is small
+  // and needs no parser, but it carries no names, and the overlay's list can
+  // only come from a .cht's `cheatN_desc` keys. See rtl/gg/cheat_loader.sv and
+  // rtl/gg/cheat_binloader.sv.
   // ==========================================================================
   wire cheat_wr;
   wire [7:0] cheat_dout;
@@ -666,7 +687,7 @@ module core_top (
       .ADDRESS_SIZE         (20),
       .OUTPUT_WORD_SIZE     (1),
       .WRITE_MEM_CLOCK_DELAY(4)
-  ) cheat_loader (
+  ) cheat_data_loader (
       .clk_74a   (clk_74a),
       .clk_memory(clk_sys),
 
@@ -680,42 +701,141 @@ module core_top (
       .write_data(cheat_dout)
   );
 
-  // The loader is a byte stream with no address of its own: entries are
-  // framed by counting sixteen bytes, so the only thing left to notice is
-  // where the file stops.
+  // The download's edges. The rising one restarts both readers, which is what
+  // lets a second file replace the first: the binary reader arms its header
+  // check there and the text reader clears its parser and its table. The
+  // falling one is end of file, which the text reader needs because the last
+  // cheat in a .cht has nothing after it to resolve its enable key.
   reg cheat_download_d = 0;
   always @(posedge clk_sys) cheat_download_d <= cheat_download_s;
-  wire cheat_eof = cheat_download_d & ~cheat_download_s;
+  wire cheat_start = ~cheat_download_d & cheat_download_s;
+  wire cheat_eof   = cheat_download_d & ~cheat_download_s;
+  wire cheat_reset = core_reset | cheat_start;
+  wire cheat_byte  = cheat_wr & cheat_download_s;
 
-  wire [128:0] gg_code;
-  wire gg_code_reset;
-  wire poke_code_wr;
-  wire [4:0] poke_code_index;
-  wire [12:0] poke_code_addr;
-  wire [7:0] poke_code_data;
-  wire [5:0] poke_code_total;
+  // Which reader gets the file, decided on its first four bytes. Both are fed
+  // every byte and only their outputs are muxed, which is safe because the
+  // verdict is settled at byte four and neither reader can emit before then:
+  // the binary one frames on sixteen bytes and the text one needs `_code = "`.
+  reg [31:0] cheat_sniff = 0;
+  reg  [2:0] cheat_sniff_n = 0;
+  reg        cheat_bin = 0;
+  always @(posedge clk_sys) begin
+    if (cheat_reset) begin
+      cheat_sniff_n <= 3'd0;
+      cheat_bin     <= 1'b0;
+    end else if (cheat_byte && cheat_sniff_n != 3'd4) begin
+      cheat_sniff   <= {cheat_dout, cheat_sniff[31:8]};
+      cheat_sniff_n <= cheat_sniff_n + 3'd1;
+      // "GGCH", byte 0 in the LSB, the same constant cheat_binloader checks.
+      if (cheat_sniff_n == 3'd3)
+        cheat_bin <= ({cheat_dout, cheat_sniff[31:8]} == 32'h48434747);
+    end
+  end
+  assign cheat_is_bin = cheat_bin;
+
+  wire [128:0] bin_code, asc_code;
+  wire bin_code_reset, asc_code_reset;
+  wire bin_poke_wr, asc_poke_wr;
+  wire [4:0] bin_poke_index, asc_poke_index;
+  wire [12:0] bin_poke_addr, asc_poke_addr;
+  wire [7:0] bin_poke_data, asc_poke_data;
+  wire [5:0] bin_poke_total, asc_poke_total;
+  wire [5:0] bin_count, asc_count, bin_decl, asc_decl;
+  wire [19:0] bin_bytes, asc_bytes;
+  wire bin_overrun, asc_overrun;
+
+  wire [128:0] gg_code = cheat_bin ? bin_code : asc_code;
+  // Both clear CODES' table at the head of a file and neither can do so after
+  // a code has gone in, so this one is an or rather than a mux: the text
+  // reader raises it on byte zero, before the verdict above is known.
+  wire gg_code_reset = bin_code_reset | asc_code_reset;
+  wire poke_code_wr = cheat_bin ? bin_poke_wr : asc_poke_wr;
+  wire [4:0] poke_code_index = cheat_bin ? bin_poke_index : asc_poke_index;
+  wire [12:0] poke_code_addr = cheat_bin ? bin_poke_addr : asc_poke_addr;
+  wire [7:0] poke_code_data = cheat_bin ? bin_poke_data : asc_poke_data;
+  wire [5:0] poke_code_total = cheat_bin ? bin_poke_total : asc_poke_total;
+
+  assign cheat_count   = cheat_bin ? bin_count : asc_count;
+  assign cheat_decl    = cheat_bin ? bin_decl : asc_decl;
+  assign cheat_bytes   = cheat_bin ? bin_bytes : asc_bytes;
+  assign cheat_overrun = cheat_bin ? bin_overrun : asc_overrun;
 
   cheat_binloader chtbin (
       .clk  (clk_sys),
-      .reset(core_reset),
+      .reset(cheat_reset),
 
-      .wr  (cheat_wr & cheat_download_s),
+      .wr  (cheat_byte),
       .data(cheat_dout),
       .eof (cheat_eof),
 
-      .gg_code   (gg_code),
-      .code_reset(gg_code_reset),
+      .gg_code   (bin_code),
+      .code_reset(bin_code_reset),
 
-      .poke_wr   (poke_code_wr),
-      .poke_index(poke_code_index),
-      .poke_addr (poke_code_addr),
-      .poke_data (poke_code_data),
-      .poke_total(poke_code_total),
+      .poke_wr   (bin_poke_wr),
+      .poke_index(bin_poke_index),
+      .poke_addr (bin_poke_addr),
+      .poke_data (bin_poke_data),
+      .poke_total(bin_poke_total),
 
-      .genie_count(cheat_count),
-      .group_count(cheat_decl),
-      .byte_count (cheat_bytes),
-      .overrun    (cheat_overrun)
+      .genie_count(bin_count),
+      .group_count(bin_decl),
+      .byte_count (bin_bytes),
+      .overrun    (bin_overrun)
+  );
+
+  wire cht_desc_wr, cht_desc_end;
+  wire [4:0] cht_desc_group, cht_desc_col;
+  wire [5:0] cht_desc_char;
+
+  cheat_loader cht (
+      .clk  (clk_sys),
+      .reset(cheat_reset),
+
+      .wr  (cheat_byte),
+      .data(cheat_dout),
+      .eof (cheat_eof),
+
+      .gg_code   (asc_code),
+      .code_reset(asc_code_reset),
+
+      .poke_wr   (asc_poke_wr),
+      .poke_index(asc_poke_index),
+      .poke_addr (asc_poke_addr),
+      .poke_data (asc_poke_data),
+      .poke_total(asc_poke_total),
+
+      .genie_count(asc_count),
+      .group_count(asc_decl),
+      .byte_count (asc_bytes),
+      .overrun    (asc_overrun),
+
+      .desc_wr   (cht_desc_wr),
+      .desc_group(cht_desc_group),
+      .desc_col  (cht_desc_col),
+      .desc_char (cht_desc_char),
+      .desc_end  (cht_desc_end)
+  );
+
+  // The names, for the overlay that does not exist yet. Until it does, the read
+  // port sits on the first character of the first title and reports it at CT:,
+  // which is enough to tell a file that parsed from one that did not. The
+  // overlay takes this port over when it lands.
+  cheat_titles titles (
+      .wr_clk  (clk_sys),
+      .wr_reset(cheat_reset),
+
+      .wr_en   (cht_desc_wr),
+      .wr_group(cht_desc_group),
+      .wr_col  (cht_desc_col),
+      .wr_char (cht_desc_char),
+      .wr_end  (cht_desc_end),
+
+      .rd_clk  (clk_sys),
+      .rd_group(5'd0),
+      .rd_col  (5'd0),
+      .rd_char (title_char),
+      .rd_len  (title_len)
   );
 
   // ==========================================================================

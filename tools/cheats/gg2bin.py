@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
-# cht2bin - a libretro .cht to the .chtbin that cheat_binloader.sv consumes
+# gg2bin - a libretro .cht to the .chtbin that cheat_binloader.sv consumes
 #
 # The parse is on the host for the reason pocket-gba measured: its on-FPGA
 # ASCII parser fitted at 441 ALMs but grew that design by 1,285 and cost
@@ -14,7 +14,7 @@
 #
 # ------------------------------------------------------------ what it emits --
 #
-# Only cheats whose `cheatN_enable` is true, because the behaviour contract
+# Only cheats whose `cheatN_enable` says so, because the behaviour contract
 # every sibling holds is that which cheats are on comes from the file and not
 # from a menu. libretro ships the whole corpus with enable = false, so a
 # straight conversion of an unedited file is an empty table, and that is
@@ -22,11 +22,15 @@
 # --all overrides it, for testing a decode against hardware without editing a
 # file first.
 #
+# "true" and "1" are on, a missing key is on, everything else is off. That is
+# rtl/gg/cheat_loader.sv's rule, and the two have to agree or a .cht and the
+# .chtbin made from it would behave differently on the same core.
+#
 # ------------------------------------------------------------- the two kinds --
 #
 # Game Genie, XXX-XXX-XXX, a ROM read override. 3,585 in libretro's Game Gear
 # corpus, plus 10 of the six-digit XXX-XXX form which is the same minus the
-# compare. Decoded by verify_genie.decode, which is checked against real ROM
+# compare. Decoded by ggcht.decode, which is checked against real ROM
 # bytes; see that file.
 #
 # Pro Action Replay, xxAAAA-DD, a work RAM poke. 3,058 in the corpus. The
@@ -100,8 +104,16 @@ def encode(addr, value, compare=None, poke=False):
     return word.to_bytes(16, "little")
 
 
-def convert(text, enable_all=False):
+def model(text, enable_all=False):
+    """The ordered entry list and the accepted cheats' names.
+
+    rtl/gg/cheat_loader.sv is the reference implementation of this; tools/sim
+    diffs the two over the whole libretro corpus. An entry is
+    ("G", address, replace, compare or None) or ("P", address, value), in the
+    order the RTL pushes them.
+    """
     entries = []
+    titles = []
     warnings = []
 
     descs = dict(re.findall(r'cheat(\d+)_desc\s*=\s*"([^"]*)"', text))
@@ -110,7 +122,11 @@ def convert(text, enable_all=False):
 
     for n in sorted(codes, key=int):
         name = descs.get(n, f"cheat{n}")
-        if not enable_all and enables.get(n, "false").lower() != "true":
+        # A cheat with no enable key at all is on, which is what a hand-written
+        # file listing nothing but codes wants, and is what the RTL does: it has
+        # nothing to withdraw a staged cheat with. libretro writes the key for
+        # every cheat in all 818 files, so the corpus never reaches this.
+        if not enable_all and enables.get(n, "true").lower() not in ("true", "1"):
             continue
 
         parts = split_codes(codes[n])
@@ -119,49 +135,65 @@ def convert(text, enable_all=False):
                 f"{name}: not two or three groups of hex, skipped ({codes[n]})")
             continue
 
+        got = []
         for code in parts:
             if "X" in code or "?" in code:
                 warnings.append(f"{name}: needs a player-chosen value, skipped ({code})")
                 continue
             if len(code) == 9:
-                got = genie_decode(code)
-                if not got:
+                d = genie_decode(code)
+                if not d:
                     warnings.append(f"{name}: bad Game Genie code, skipped ({code})")
                     continue
-                addr, replace, compare = got
-                entries.append(encode(addr, replace, compare=compare))
+                addr, replace, compare = d
+                got.append(("G", addr, replace, compare))
             elif len(code) == 6:
                 # The six-digit form is the nine-digit one without the compare
                 # group, so it replaces unconditionally.
                 d = [int(c, 16) for c in code]
                 addr = ((d[5] ^ 0xF) << 12) | (d[2] << 8) | (d[3] << 4) | d[4]
-                entries.append(encode(addr, (d[0] << 4) | d[1]))
+                got.append(("G", addr, (d[0] << 4) | d[1], None))
             elif len(code) == 8:
-                got = par_decode(code)
-                if not got:
+                d = par_decode(code)
+                if not d:
                     warnings.append(f"{name}: bad Pro Action Replay code, skipped ({code})")
                     continue
-                addr, value = got
+                addr, value = d
                 if not 0xC000 <= addr <= 0xDFFF:
                     warnings.append(f"{name}: poke outside work RAM, skipped ({code} -> {addr:04X})")
                     continue
-                entries.append(encode(addr, value, poke=True))
+                got.append(("P", addr, value))
             else:
                 warnings.append(f"{name}: unrecognised code length, skipped ({code})")
 
+        if got:
+            entries.extend(got)
+            titles.append(name)
+
+    # The ceiling truncates mid-cheat. Nothing here couples one entry to the
+    # next, so half a cheat is half a cheat and not a hazard; see the RTL.
     if len(entries) > MAX_CODES:
         warnings.append(f"{len(entries)} entries, {MAX_CODES} is the ceiling; dropped the rest")
         entries = entries[:MAX_CODES]
 
+    return entries, titles, warnings
+
+
+def convert(text, enable_all=False):
+    entries, _titles, warnings = model(text, enable_all)
+    blob = b"".join(
+        encode(e[1], e[2], compare=e[3]) if e[0] == "G"
+        else encode(e[1], e[2], poke=True)
+        for e in entries)
     header = MAGIC + bytes([VERSION, 0]) + len(entries).to_bytes(2, "little") + bytes(8)
-    return header + b"".join(entries), len(entries), warnings
+    return header + blob, len(entries), warnings
 
 
 def main(argv):
     enable_all = "--all" in argv
     argv = [a for a in argv if a != "--all"]
     if len(argv) != 3:
-        print("usage: cht2bin.py [--all] <in.cht> <out.chtbin>", file=sys.stderr)
+        print("usage: gg2bin.py [--all] <in.cht> <out.chtbin>", file=sys.stderr)
         return 2
 
     with open(argv[1], encoding="utf-8", errors="replace") as fh:

@@ -40,7 +40,7 @@ def fields(w):
 
 # The decode itself, against the one code checked by hand out of the ROM:
 # Alien Syndrome's 010-75F-E66 replaces the byte at 0x0075, whose original
-# value is 0x03. verify_genie.py is the wider check against a whole ROM set.
+# value is 0x03. ggcht.py is the wider check against a whole ROM set.
 assert decode("01075FE66") == (0x0075, 0x01, 0x03), decode("01075FE66")
 
 # Game Genie, nine digits, and the '+' separator 924 corpus codes use where a

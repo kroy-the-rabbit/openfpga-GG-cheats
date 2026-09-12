@@ -249,6 +249,66 @@ The refusals are deliberate. `O` for `0` is a tempting correction, but a
 an address that is wrong writes into a running game once a frame, and the cost of
 skipping is one cheat that does nothing.
 
+## P2 stage 2, the .cht reader
+
+`rtl/gg/cheat_loader.sv`, 607 lines, parses a plain libretro `.cht` into both
+mechanisms beside `cheat_binloader.sv`. `core_top.v` reads the first four bytes
+of the slot and sends the file to whichever reader claims it. No fit yet.
+
+### It is checked against the converter, not eyeballed
+
+`tools/sim/run.py` runs the RTL in Icarus over the corpus and diffs what it
+pushes against `tools/cheats/gg2bin.py`, entry for entry and title for title.
+**818 files, two passes each, 0 mismatches**, in 15 seconds on this machine.
+
+Two passes per file because libretro ships every cheat in the corpus with
+`enable = false`. The stock pass proves the enable path, where both sides must
+produce nothing at all and would otherwise agree trivially; the second rewrites
+those keys to true and is where the decode is compared. `--idle` covers the
+other end-of-file path, the timer that fires when the download's falling edge
+never arrives.
+
+Four rules had to be picked deliberately, because the two sides would otherwise
+have differed and a `.cht` would then behave differently from the `.chtbin` made
+from it. Two were settled in the Python, on the grounds that the RTL's rule is
+the one two siblings already ship:
+
+| | | settled in |
+|---|---|---|
+| no `cheatN_enable` key at all | on, so a hand-written file of nothing but codes works | Python |
+| `cheatN_enable = 1` | on, as well as `true` | Python |
+| more than 32 entries | truncate mid-cheat, matching the converter's one entry list. `pocket-gba` drops the whole cheat instead, because a compare entry there suppresses the following slot, and nothing here couples one entry to the next | RTL |
+| whitespace in a code field | leading and trailing allowed, interior not, which is what the converter's `.strip()` does | RTL |
+
+None of the four occurs anywhere in the corpus. The cross-check is what surfaced
+them, not the 818 files.
+
+### What shaped the module
+
+`cheatN_enable` comes after `cheatN_code`, so a cheat has to be staged before
+its fate is known. `pocket-pcengine` stages optimistically and rolls back;
+`CODES` cannot, because its index only ever increments. So this is
+`pocket-gba`'s two-bank buffer with a deferred push, an `eof` input and an
+idle-timer backstop.
+
+The tokeniser is the part no sibling had. Both code formats are groups of hex
+digits joined by `-` or `+`, and the corpus does not use the two consistently:
+924 codes write one nine-digit Game Genie code as `058+BA8+E66`. So the code
+boundary comes from the group *width*, threes taking three groups to a code and
+fours taking two, and a field whose groups are not all one width contributes
+nothing at all rather than being regrouped on a guess. Digits are kept in an
+indexed array rather than shifted into a word, because the Game Genie address is
+a permutation: `(d5 ^ 0xF)`, then `d2`, `d3`, `d4`, and the compare takes `d6`
+and `d8` and discards `d7`.
+
+### The title store is in the fit, the overlay is not
+
+`cheat_titles.sv` is wired to the parser's `desc_*` ports so the description
+path is measured rather than stripped. Its one read port sits on the first
+character of the first title and reports it at `CT:`, which is the only view of
+the store until `cheat_osd.sv` exists and takes that port over. `CF:` reads back
+which reader claimed the file.
+
 ## Hardware
 
 2026-09-10, on a Pocket, from `Assets/gg/common`: a top-down RPG boots and

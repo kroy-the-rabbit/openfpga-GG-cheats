@@ -133,9 +133,8 @@ So:
    carries no names, so its rows read `CHEAT nn`. `pocket-dev/docs/HANDOFF.md`
    records it under "GBA cheats changed shape". This core is at 36.7% ALMs, the
    roomiest of the set, so the fitting argument against an on-FPGA parser is
-   weaker here than anywhere. Whether that parser gets written, or this core's
-   `.chtbin` carries names instead and keeps the one verified decode in one
-   place, is §9.8.
+   weaker here than anywhere. That parser is now written, §9.8; both readers
+   ship and the slot takes either extension.
 
    Here the decode runs on the host: the picker's converter decodes Game Genie to
    the 128-bit `CODES` word and writes `.chtbin`, and `cheat_binloader.sv`
@@ -143,7 +142,7 @@ So:
    reference implementation, not written from memory (§9). **Done, 2026-09-11.**
    Genesis Plus GX's `decode_cheat` (`gx/gui/cheats.c`) was the only complete
    implementation reachable, and SMS Power!'s page 403s, so there is no second
-   document. `tools/cheats/verify_genie.py` is the corroboration instead: a
+   document. `tools/cheats/ggcht.py` is the corroboration instead: a
    Game Genie compare byte is the original byte at the address it patches, so
    a correct decode predicts the ROM. 230 of 242 codes agree across a 33-game
    set, 29 games perfectly, and the three plausible alternative encodings of
@@ -291,14 +290,15 @@ fork proved it and its README carries the save warning to copy.
    all, or only enforces it in firmware. Decides whether the soft check bit
    is ever worth setting.
 7. **ROM size ceiling** to size the mapper address width and the save slot.
-8. **Where the cheat names come from.** The overlay needs a name per cheat and
-   only a `.cht` carries one, so either an ASCII parser goes into the RTL
-   beside `cheat_binloader.sv`, as `pocket-gba` has, or this core's `.chtbin`
-   gains a name field, which no sibling's has. The first is exact alignment and
-   duplicates the Game Genie decode into RTL, where it would have to be kept in
-   step with `tools/cheats/ggcht.py`, the copy checked against a ROM set. The
-   second keeps one decode but diverges the format. Undecided; raised
-   2026-09-11 while both are cheap.
+8. **Where the cheat names come from.** ~~Undecided~~ **Answered 2026-09-11:
+   the ASCII parser, for exact alignment with `pocket-gba`.** `rtl/gg/cheat_loader.sv`
+   reads a `.cht` and `core_top.v` sniffs the first four bytes for "GGCH" to
+   choose between it and `cheat_binloader.sv`. The cost accepted with it is a
+   second implementation of the Game Genie decode, in RTL, which has to stay in
+   step with `tools/cheats/ggcht.py`. `tools/sim/run.py` is what keeps it in
+   step: it diffs the two over all 818 corpus files, entry for entry and title
+   for title. The alternative, a name field in this core's `.chtbin` alone,
+   would have kept one decode and diverged the format from every sibling.
 
 ---
 
