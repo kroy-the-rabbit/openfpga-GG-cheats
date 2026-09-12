@@ -50,6 +50,7 @@ test:
 	tools/check/provenance.sh
 	tools/check/project.sh
 	tools/check/manifests.sh
+	tools/check/cheats.sh
 
 report:
 	REV=$(REV) BUILD_NAME=$(BUILD_NAME) $(HARNESS)/report.sh

@@ -1,3 +1,6 @@
 build/
 external/
 *.swp
+
+# Python bytecode from tools/cheats
+__pycache__/

@@ -141,13 +141,13 @@ P2 is cheats, and stage 1 of three is built and fitted:
    which is this machine's too; take the PC Engine copy for its `COL0`/`ROW0`
    inset. `interact.json` has no overlay switch yet on purpose, and
    `0xF000010C` is already reserved for it in `core_top.v`.
-3. **Started: the converter.** `tools/cheats` has to decode Game Genie
-   XXX-XXX-XXX and Pro Action Replay xxAAAA-DD into the `.chtbin` that
-   `cheat_binloader.sv` documents. Neither sibling has a Game Genie decoder to
-   copy. The decode itself is now settled and verified against a ROM set,
-   `tools/cheats/verify_genie.py`, which holds the algorithm and is a
-   regression check; `PLAN.md` S4 records the evidence. What is left is the
-   writer: the PAR side, the `cheatN_enable` resolution, and the file.
+3. **Done, on the host side.** `tools/cheats/cht2bin.py` writes the `.chtbin`
+   that `cheat_binloader.sv` reads, both code kinds. All 818 libretro Game Gear
+   files convert with no crash and 7,133 entries. The Game Genie decode is in
+   `tools/cheats/verify_genie.py`, which doubles as the check against a ROM
+   set; `PLAN.md` S4 records the evidence. `tools/check/cheats.sh` asserts the
+   field positions against the RTL's documented layout and is in `make test`.
+   Untested on hardware, which needs the overlay above to be worth using.
 
 ## Rules that hold here as in every sibling
 

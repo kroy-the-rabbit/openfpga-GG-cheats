@@ -232,6 +232,23 @@ is now written and never read, so the fitter removed it. The clear's walk still
 counts to 16,383 and simply wraps, clearing the low 8 KB twice, which costs
 nothing and is why this was left alone rather than narrowed to match.
 
+### What the corpus made the converter handle
+
+libretro's 818 Game Gear files are not clean, and each of these was found by
+converting all of them rather than by reading the format:
+
+| | count | what is done |
+|---|---:|---|
+| `+` where `-` belongs, so one code looks like three | 924 codes | split on both, regroup by group width |
+| `X` or `?` for a value the player was meant to pick | 111 | skipped |
+| a character that is neither hex nor a placeholder, mostly `O` for `0` | 14 | skipped, not corrected |
+| more than 32 entries once expanded | 40 files | truncated at `CODES`' ceiling |
+| a poke outside work RAM, all of them the placeholder `0000-0000` | 4 | skipped |
+
+The refusals are deliberate. `O` for `0` is a tempting correction, but a
+an address that is wrong writes into a running game once a frame, and the cost of
+skipping is one cheat that does nothing.
+
 ## Hardware
 
 2026-09-10, on a Pocket, from `Assets/gg/common`: a top-down RPG boots and
