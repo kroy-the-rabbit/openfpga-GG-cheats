@@ -125,7 +125,15 @@ So:
    ARM. Here it runs on the host: the picker's converter decodes Game Genie to
    the 128-bit `CODES` word and writes `.chtbin`, and `cheat_binloader.sv`
    shifts it in unchanged. The decode algorithm is verified against a
-   reference implementation, not written from memory (§9).
+   reference implementation, not written from memory (§9). **Done, 2026-09-11.**
+   Genesis Plus GX's `decode_cheat` (`gx/gui/cheats.c`) was the only complete
+   implementation reachable, and SMS Power!'s page 403s, so there is no second
+   document. `tools/cheats/verify_genie.py` is the corroboration instead: a
+   Game Genie compare byte is the original byte at the address it patches, so
+   a correct decode predicts the ROM. 230 of 242 codes agree across a 33-game
+   set, 29 games perfectly, and the three plausible alternative encodings of
+   the compare byte score 5%, 0% and 0%. The algorithm is in that file's
+   docstring.
 2. **Pro Action Replay through `cheat_poker.sv`**, the PC Engine mechanism:
    writes into work RAM once per frame at vblank through a second port, with
    the lookup keyed on registered addresses (§5).
