@@ -39,3 +39,27 @@ upstream ships. It runs in Master System mode only.
    Record the new commit and date at the top of this file in the same commit.
 4. **The bitstream is not upstream's.** Everything under `target/`, `pkg/`
    and `rtl/gg/` is this project's, under the licence in `LICENSE`.
+
+## From the sibling cores, not from upstream
+
+`rtl/upstream/` is MiSTer's. These came from the other Pocket cores in
+`pocket-dev` instead, and the licence line in each is theirs, GPL-3.0-or-later,
+not this repository's GPLv2. Upstream's "or later" permits that; it also means
+the combined work is GPL-3, which settles `PLAN.md` §9.2 by import rather than
+by decision.
+
+| file | from | changed |
+|---|---|---|
+| `rtl/gg/cheat_font.sv` | `pocket-pcengine`, byte-identical in every sibling | nothing. `tools/cheats/genfont.py --check` regenerates it and confirms the copy |
+| `rtl/gg/cheat_titles.sv` | `pocket-pcengine`, byte-identical in every sibling | nothing |
+| `rtl/gg/cheat_poker.sv` | `pocket-pcengine` | comments, and the work RAM it writes into. Logic unchanged |
+| `tools/cheats/genfont.py` | `pocket-gbc` | the output path, `src/gb/` to `rtl/gg/` |
+
+`rtl/gg/cheat_binloader.sv` is this project's, but its shape is
+`pocket-gba`'s: the magic interlock, the byte counter, the shift register and
+the two-state sequencer.
+
+The picker keeps byte-identical copies of each core's host-side decoder and
+`make sync-check` there compares them, so this repository's are named to sit
+beside the existing ones without collision: `tools/cheats/ggcht.py` beside
+`gbacht.py`, `tools/cheats/gg2bin.py` beside `cht2bin.py`.
