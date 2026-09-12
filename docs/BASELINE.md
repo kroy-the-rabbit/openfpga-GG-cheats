@@ -301,6 +301,16 @@ indexed array rather than shifted into a word, because the Game Genie address is
 a permutation: `(d5 ^ 0xF)`, then `d2`, `d3`, `d4`, and the compare takes `d6`
 and `d8` and discards `d7`.
 
+### A second cheat file used to be misread
+
+Both readers now reset on the *rising* edge of the download rather than on core
+reset. `cheat_binloader.sv` arms its header check only out of reset, so before
+this a second `.chtbin` loaded in one session would have been read as entries
+from byte zero, with no header and no `code_reset`, appending to the first file's
+codes until the 32 slots filled. Reachable by changing the cheat file from the
+Pocket's menu without power cycling. Found while wiring the second reader, which
+needs the same edge to clear its parser.
+
 ### The title store is in the fit, the overlay is not
 
 `cheat_titles.sv` is wired to the parser's `desc_*` ports so the description
