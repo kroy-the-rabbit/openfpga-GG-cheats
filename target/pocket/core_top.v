@@ -349,6 +349,16 @@ module core_top (
   reg region_jp = 0;  // 0 = export, 1 = Japan
   reg sp64 = 0;  // lift the 8-sprites-per-line limit
 
+  // Cheats. Both start off and neither is persisted (interact.json declares
+  // persist false), which is the contract every sibling holds: a cheat is
+  // never on because it was on last time. Which cheats are on comes from the
+  // file, not from here; this is only the master switch and the overlay.
+  reg cheats_en = 0;
+  // The overlay is P2 stage 2 and has no menu entry yet: interact.json does
+  // not offer a switch that does nothing. The address is claimed here so the
+  // one it eventually gets is the one this already answers.
+  reg cheats_osd = 0;
+
   reg [31:0] settings_rd_data = 0;
 
   always @(posedge clk_74a) begin
@@ -367,6 +377,12 @@ module core_top (
         32'hF0000104: begin
           sp64 <= bridge_wr_data[0];
         end
+        32'hF0000108: begin
+          cheats_en <= bridge_wr_data[0];
+        end
+        32'hF000010C: begin
+          cheats_osd <= bridge_wr_data[0];
+        end
       endcase
     end
 
@@ -374,11 +390,20 @@ module core_top (
       casex (bridge_addr)
         32'hF0000100: settings_rd_data <= {31'd0, region_jp};
         32'hF0000104: settings_rd_data <= {31'd0, sp64};
+        32'hF0000108: settings_rd_data <= {31'd0, cheats_en};
+        32'hF000010C: settings_rd_data <= {31'd0, cheats_osd};
         // Diagnostics. The Pocket menu is the only console this core has, so
         // the one thing that can go wrong silently is reported as a number:
         // a non-zero value here means bytes were dropped on the way into
         // SDRAM and the loaded ROM has holes in it.
         32'hF0000200: settings_rd_data <= {31'd0, rom_overrun_74};
+        // Cheats, same idea: a file that loaded nothing and a file that never
+        // arrived look identical on a handheld with no console. CC: is what
+        // the loader took, CD: what the header declared, CB: bytes seen.
+        32'hF0000204: settings_rd_data <= {26'd0, cheat_count_74};
+        32'hF0000208: settings_rd_data <= {26'd0, cheat_decl_74};
+        32'hF000020C: settings_rd_data <= {12'd0, cheat_bytes_74};
+        32'hF0000210: settings_rd_data <= {31'd0, cheat_overrun_74};
         default: settings_rd_data <= 32'd0;
       endcase
     end
@@ -518,6 +543,7 @@ module core_top (
 
   wire cart_download_74 = any_download && dataslot_requestwrite_id == 16'd1;
   wire save_download_74 = any_download && dataslot_requestwrite_id == 16'd2;
+  wire cheat_download_74 = any_download && dataslot_requestwrite_id == 16'd3;
 
   // The datatable is where a core tells APF how many bytes of a nonvolatile
   // slot to write back when the core exits. data.json's Save slot is the
@@ -564,16 +590,20 @@ module core_top (
   wire cart_download_s;
   wire save_download_s;
   wire [15:0] cont1_key_s;
+  wire cheat_download_s;
   wire region_jp_s, sp64_s;
+  wire cheats_en_s, cheats_osd_s;
   wire reset_delay_s;
 
   synch_3 s_locked (pll_core_locked, pll_core_locked_s, clk_sys);
   synch_3 s_resetn (reset_n, reset_n_s, clk_sys);
   synch_3 s_dl (cart_download_74, cart_download_s, clk_sys);
   synch_3 s_svdl (save_download_74, save_download_s, clk_sys);
+  synch_3 s_chdl (cheat_download_74, cheat_download_s, clk_sys);
   synch_3 s_rstd (reset_delay > 0, reset_delay_s, clk_sys);
   synch_3 #(16) s_cont1 (cont1_key, cont1_key_s, clk_sys);
   synch_3 #(2) s_set ({region_jp, sp64}, {region_jp_s, sp64_s}, clk_sys);
+  synch_3 #(2) s_cht ({cheats_en, cheats_osd}, {cheats_en_s, cheats_osd_s}, clk_sys);
 
   wire core_reset = ~reset_n_s | reset_delay_s;
 
@@ -581,6 +611,17 @@ module core_top (
   wire rom_overrun;
   wire rom_overrun_74;
   synch_3 s_ovr (rom_overrun, rom_overrun_74, clk_74a);
+
+  wire [5:0] cheat_count, cheat_decl;
+  wire [19:0] cheat_bytes;
+  wire cheat_overrun;
+  wire [5:0] cheat_count_74, cheat_decl_74;
+  wire [19:0] cheat_bytes_74;
+  wire cheat_overrun_74;
+  synch_3 #(6) s_cc (cheat_count, cheat_count_74, clk_74a);
+  synch_3 #(6) s_cd (cheat_decl, cheat_decl_74, clk_74a);
+  synch_3 #(20) s_cb (cheat_bytes, cheat_bytes_74, clk_74a);
+  synch_3 s_co (cheat_overrun, cheat_overrun_74, clk_74a);
 
   // ==========================================================================
   // ROM in
@@ -606,6 +647,75 @@ module core_top (
       .write_en  (ioctl_wr),
       .write_addr(ioctl_addr),
       .write_data(ioctl_dout)
+  );
+
+  // ==========================================================================
+  // Cheats in
+  //
+  // One slot feeds both mechanisms. cheat_binloader splits the file: an entry
+  // with bit 127 set is a Pro Action Replay poke and goes to cheat_poker's
+  // table inside gg_core, and every other entry is a Game Genie code clocked
+  // into system.vhd's CODES. The decode that turns XXX-XXX-XXX into a word is
+  // on the host, in tools/cheats; see rtl/gg/cheat_binloader.sv.
+  // ==========================================================================
+  wire cheat_wr;
+  wire [7:0] cheat_dout;
+
+  data_loader #(
+      .ADDRESS_MASK_UPPER_4 (4'h5),
+      .ADDRESS_SIZE         (20),
+      .OUTPUT_WORD_SIZE     (1),
+      .WRITE_MEM_CLOCK_DELAY(4)
+  ) cheat_loader (
+      .clk_74a   (clk_74a),
+      .clk_memory(clk_sys),
+
+      .bridge_wr           (bridge_wr),
+      .bridge_endian_little(bridge_endian_little),
+      .bridge_addr         (bridge_addr),
+      .bridge_wr_data      (bridge_wr_data),
+
+      .write_en  (cheat_wr),
+      .write_addr(),
+      .write_data(cheat_dout)
+  );
+
+  // The loader is a byte stream with no address of its own: entries are
+  // framed by counting sixteen bytes, so the only thing left to notice is
+  // where the file stops.
+  reg cheat_download_d = 0;
+  always @(posedge clk_sys) cheat_download_d <= cheat_download_s;
+  wire cheat_eof = cheat_download_d & ~cheat_download_s;
+
+  wire [128:0] gg_code;
+  wire gg_code_reset;
+  wire poke_code_wr;
+  wire [4:0] poke_code_index;
+  wire [12:0] poke_code_addr;
+  wire [7:0] poke_code_data;
+  wire [5:0] poke_code_total;
+
+  cheat_binloader chtbin (
+      .clk  (clk_sys),
+      .reset(core_reset),
+
+      .wr  (cheat_wr & cheat_download_s),
+      .data(cheat_dout),
+      .eof (cheat_eof),
+
+      .gg_code   (gg_code),
+      .code_reset(gg_code_reset),
+
+      .poke_wr   (poke_code_wr),
+      .poke_index(poke_code_index),
+      .poke_addr (poke_code_addr),
+      .poke_data (poke_code_data),
+      .poke_total(poke_code_total),
+
+      .genie_count(cheat_count),
+      .group_count(cheat_decl),
+      .byte_count (cheat_bytes),
+      .overrun    (cheat_overrun)
   );
 
   // ==========================================================================
@@ -726,6 +836,17 @@ module core_top (
 
       .audio_l(audio_l),
       .audio_r(audio_r),
+
+      .cheats_en      (cheats_en_s),
+      .gg_code        (gg_code),
+      .gg_code_reset  (gg_code_reset),
+      .gg_avail       (),
+
+      .poke_code_wr   (poke_code_wr),
+      .poke_code_index(poke_code_index),
+      .poke_code_addr (poke_code_addr),
+      .poke_code_data (poke_code_data),
+      .poke_code_total(poke_code_total),
 
       .rom_overrun(rom_overrun),
 

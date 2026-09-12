@@ -32,6 +32,8 @@ set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "
 set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "upstream/parts.v"]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "upstream/sdram.sv"]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "upstream/cheatcodes.sv"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "gg/cheat_poker.sv"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "gg/cheat_binloader.sv"]
 
 set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) "upstream/video.vhd"]
 set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) "upstream/sprom.vhd"]

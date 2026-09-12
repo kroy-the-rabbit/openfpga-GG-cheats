@@ -61,6 +61,22 @@ module gg_core (
     output wire signed [15:0] audio_l,
     output wire signed [15:0] audio_r,
 
+    // ---- cheats, P2 -------------------------------------------------------
+    // One master switch feeds both mechanisms. The Game Genie word is shifted
+    // in by core_top's loader, bit 128 clocking each code into `system`'s
+    // GAMEGENIE; the Pro Action Replay table is written entry by entry and
+    // `poke_code_total` is what makes an entry live.
+    input  wire        cheats_en,
+    input  wire [128:0] gg_code,
+    input  wire        gg_code_reset,  // pulse before shifting a new set in
+    output wire        gg_avail,
+
+    input  wire        poke_code_wr,
+    input  wire  [4:0] poke_code_index,
+    input  wire [12:0] poke_code_addr,
+    input  wire  [7:0] poke_code_data,
+    input  wire  [5:0] poke_code_total,
+
     // ---- diagnostics ------------------------------------------------------
     output wire        rom_overrun,    // sticky: the ROM queue was overrun
 
@@ -343,13 +359,55 @@ wire  [7:0] ram_d;
 wire        ram_we;
 wire  [7:0] ram_q;
 
-spram #(.widthad_a(14)) ram_inst (
-    .clock  (clk_sys),
-    .address(ram_clr_run ? ram_clr_addr : {1'b0, ram_a[12:0]}),
-    .wren   (ram_clr_run | ram_we),
-    .data   (ram_clr_run ? 8'h00 : ram_d),
-    .q      (ram_q)
+// Port A is the Z80's. Port B carries the cold-reset clear and, once the
+// machine is running, cheat_poker's once-a-frame writes; the clear owns the
+// port while it runs and the poker stands down (`blocked`) rather than
+// stalling. This was an spram with the clear muxed onto the one port until P2
+// needed a second writer.
+wire [12:0] poke_addr;
+wire  [7:0] poke_data;
+wire        poke_wr;
+
+wire [13:0] ram_b_addr = ram_clr_run ? ram_clr_addr : {1'b0, poke_addr};
+wire  [7:0] ram_b_data = ram_clr_run ? 8'h00       : poke_data;
+wire        ram_b_wren = ram_clr_run | poke_wr;
+
+dpram #(.widthad_a(14)) ram_inst (
+    .clock_a  (clk_sys),
+    .address_a({1'b0, ram_a[12:0]}),
+    .wren_a   (ram_we),
+    .data_a   (ram_d),
+    .q_a      (ram_q),
+
+    .clock_b  (clk_sys),
+    .address_b(ram_b_addr),
+    .wren_b   (ram_b_wren),
+    .data_b   (ram_b_data),
+    .q_b      ()
 );
+
+cheat_poker poker (
+    .clk       (clk_sys),
+    .reset     (reset_active),
+    .enable    (cheats_en),
+    .vblank    (vblank),
+    .blocked   (ram_clr_run),
+
+    .code_wr   (poke_code_wr),
+    .code_index(poke_code_index),
+    .code_addr (poke_code_addr),
+    .code_data (poke_code_data),
+    .code_total(poke_code_total),
+
+    .poke_wr   (poke_wr),
+    .poke_addr (poke_addr),
+    .poke_data (poke_data)
+);
+
+// CODES clears its table on reset, so it fires on the first byte of a
+// cartridge load, matching upstream's `ioctl_download & ioctl_wr & !addr`,
+// and again whenever core_top is about to shift a new set of codes in.
+wire gg_reset = (cart_download & ioctl_wr & ~|ioctl_addr) | gg_code_reset;
 
 wire [14:0] nvram_a;
 wire  [7:0] nvram_d;
@@ -409,12 +467,13 @@ system #(63) system_inst (
     .ext_gg_bios_loaded (1'b0),
     .GG_BIOSWEN         (1'b0),
 
-    // The Game Genie engine is P2. It is present and idle: GG_EN low leaves
-    // the read override out of the CPU data path entirely.
-    .GG_EN              (1'b1),   // active low inside `system`: 1 = engine off
-    .GG_CODE            (129'd0),
-    .GG_RESET           (1'b0),
-    .GG_AVAIL           (),
+    // The enable is active low inside `system`, so cheats_en is inverted
+    // here: the read override leaves the CPU data path entirely when the
+    // master switch is off.
+    .GG_EN              (~cheats_en),
+    .GG_CODE            (gg_code),
+    .GG_RESET           (gg_reset),
+    .GG_AVAIL           (gg_avail),
 
     .gg_link_en         (1'b0),
     .gg_link_in         (7'b1111111),

@@ -7,7 +7,9 @@
         "id": 1,
         "required": true,
         "parameters": "0x109",
-        "extensions": ["gg"],
+        "extensions": [
+          "gg"
+        ],
         "address": "0x10000000",
         "size_maximum": "0x400000"
       },
@@ -17,9 +19,22 @@
         "required": false,
         "parameters": "0x84",
         "nonvolatile": true,
-        "extensions": ["sav"],
+        "extensions": [
+          "sav"
+        ],
         "address": "0x20000000",
         "size_maximum": "0x8000"
+      },
+      {
+        "name": "Cheats",
+        "id": 3,
+        "required": false,
+        "parameters": "0x205",
+        "extensions": [
+          "chtbin"
+        ],
+        "address": "0x50000000",
+        "size_maximum": "0x1000"
       }
     ]
   }
