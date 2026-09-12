@@ -93,9 +93,9 @@ From `PLAN.md` §9, in the order they bite:
 
 ## Next, in order
 
-P0 is closed: two seeds, a package, and every hardware check clean. P1 is
-saves, per `docs/PLAN.md`, and the RTL and manifests are written but not yet
-built or run:
+P0 is closed. P1's saves are closed too, on hardware; P1's other half, sleep,
+is not started and waits on the savestates decision in `PLAN.md` §9.4. What
+saves took:
 
 1. **Done.** Cart RAM out through the save slot: `core_top.v` has a
    `save_data_loader`/`save_data_unloader` pair on `gg_core.sv`'s second
@@ -108,18 +108,21 @@ built or run:
 3. **Done.** `data.json` declares a `"Save"` slot, id 2, `nonvolatile: true`,
    `0x8000` (the whole `nvram_inst`, cart RAM and EEPROM both), and
    `core_top.v`'s datatable write reports that size once `pll_core_locked`.
-4. **Fits, and is flashed.** Two seeds, 6,057 to 6,067 ALMs, 32.8%, timing
-   met on both; `docs/BASELINE.md` has the numbers. Hold margin is the
-   tightest this project has produced, 0.068 to 0.072 ns, and worth a glance
-   if a later change tightens it further. The seed-3 build is on the Pocket's
-   card, verified by checksum against the zip; the first attempt flashed P0
-   again, see `BASELINE.md`, "Things the harness got wrong". The exit
-   criterion, a save surviving closing the core and a power cycle, is still
-   open and needs one RAM game: `Defenders of Oasis`,
-   `Sylvan Tale`, `Crystal Warriors`, and `Phantasy Star Gaiden` are all
-   confirmed battery-save Game Gear titles (MAME's `gamegear.xml` software
-   list) and all four are in Kroy's ROM set. There is no EEPROM game to test
-   against; see `PLAN.md` §9.3.
+4. **Done, and confirmed on hardware.** Two seeds, 6,057 to 6,067 ALMs,
+   32.8%, timing met on both; `docs/BASELINE.md` has the numbers. Hold margin
+   is the tightest this project has produced, 0.068 to 0.072 ns, and worth a
+   glance if a later change tightens it further. The seed-3 build is on the
+   Pocket's card, verified by checksum against the zip; the first attempt
+   flashed P0 again, see `BASELINE.md`, "Things the harness got wrong". The
+   exit criterion is met: `Eternal Legend - Eien no Densetsu (Japan)` saved,
+   survived a power cycle and loaded back, 2026-09-11. Other confirmed
+   battery-save Game Gear titles, if another is wanted: `Defenders of Oasis`,
+   `Sylvan Tale`, `Crystal Warriors`, `Phantasy Star Gaiden` (MAME's
+   `gamegear.xml` software list). There is no EEPROM game to test against,
+   see `PLAN.md` §9.3.
+5. **Not started: sleep.** `core.json` declares `sleep_supported: false`.
+   `PLAN.md` §9.4 decides whether that is APF sleep, MiSTer savestates, or
+   neither.
 
 ## Rules that hold here as in every sibling
 

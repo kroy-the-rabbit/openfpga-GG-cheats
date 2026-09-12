@@ -197,6 +197,16 @@ SDRAM writer kept up with the APF loader's bursts as designed.
 Every hardware check P0 set out to make now passes: video, audio, controls,
 and the diagnostic that would have caught a corrupted load.
 
+**2026-09-11, saves, `f224504`.** `Eternal Legend - Eien no Densetsu (Japan)`
+saved in game, exited to the menu, power cycled, reloaded, and the save was
+there. Both directions of the slot work: the host read 32,768 bytes out of
+`nvram_inst` on exit, the size the datatable reports, and wrote them back in
+on the next load. On the card as
+`Saves/gg/common/Eternal Legend - Eien no Densetsu (Japan).sav`, one written
+region at `0x0310-0x05cf` and `0xFF` everywhere else. P1's exit criterion is
+met for cart RAM; the EEPROM half of the slot has no Game Gear title that can
+exercise it, see `PLAN.md` §9.3.
+
 ## Method
 
     R=../tools/runner-build
