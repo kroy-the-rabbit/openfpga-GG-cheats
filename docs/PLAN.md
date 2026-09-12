@@ -122,7 +122,22 @@ So:
 
 1. **Game Genie through `CODES`**, which the upstream already instantiates on
    the CPU bus. What is missing is the decoder, and on MiSTer that runs on the
-   ARM. Here it runs on the host: the picker's converter decodes Game Genie to
+   ARM.
+
+   **This section is half stale, and the correction is 2026-09-10's.** It was
+   written on the belief that compiling on the host was simply better. The tree
+   has since gone the other way: `pocket-gba` removed savestates, dropped from
+   97% to 78% ALMs, put `cheat_loader.sv` back in the fit, and its Cheats slot
+   now takes both `cht` and `chtbin`. The reason is the overlay, which draws
+   each cheat's name from `cheatN_desc` cut at 26 characters, and a `.chtbin`
+   carries no names, so its rows read `CHEAT nn`. `pocket-dev/docs/HANDOFF.md`
+   records it under "GBA cheats changed shape". This core is at 36.7% ALMs, the
+   roomiest of the set, so the fitting argument against an on-FPGA parser is
+   weaker here than anywhere. What is not yet decided is whether that parser
+   gets written, or whether this core's `.chtbin` carries names instead and
+   keeps the one verified decode in one place, is §9.8.
+
+   Here the decode runs on the host: the picker's converter decodes Game Genie to
    the 128-bit `CODES` word and writes `.chtbin`, and `cheat_binloader.sv`
    shifts it in unchanged. The decode algorithm is verified against a
    reference implementation, not written from memory (§9). **Done, 2026-09-11.**
@@ -267,13 +282,23 @@ fork proved it and its README carries the save warning to copy.
 4. **Savestates.** Carry MiSTer's `savestates.sv` or drop it for APF sleep and
    savestates as `pocket-gba` does? Decide on the P0 measurement: it is
    1684 lines and MiSTer-shaped.
-5. **Game Genie decoding.** Which reference implementation the host converter
-   is checked against. MiSTer's ARM-side decoder is the natural one, since
-   the target word layout is MiSTer's.
+5. **Game Genie decoding.** ~~Which reference implementation the host converter
+   is checked against.~~ **Answered 2026-09-11.** Genesis Plus GX's
+   `decode_cheat`, and then checked against a ROM set rather than against a
+   second document, because there is no reachable second document. See S4 and
+   `tools/cheats/ggcht.py`.
 6. **Adapter ID.** Whether the Pocket exposes the adapter's ID to the core at
    all, or only enforces it in firmware. Decides whether the soft check bit
    is ever worth setting.
 7. **ROM size ceiling** to size the mapper address width and the save slot.
+8. **Where the cheat names come from.** The overlay needs a name per cheat and
+   only a `.cht` carries one, so either an ASCII parser goes into the RTL
+   beside `cheat_binloader.sv`, as `pocket-gba` has, or this core's `.chtbin`
+   gains a name field, which no sibling's has. The first is exact alignment and
+   duplicates the Game Genie decode into RTL, where it would have to be kept in
+   step with `tools/cheats/ggcht.py`, the copy checked against a ROM set. The
+   second keeps one decode but diverges the format. Undecided; raised
+   2026-09-11 while both are cheap.
 
 ---
 

@@ -45,12 +45,17 @@
 // poke entry is inert on the Game Genie side by construction rather than by
 // this module remembering to withhold it.
 //
-// The magic is a safety interlock, not decoration. The file lives in a slot
-// that also accepts a plain libretro .cht, so somebody dropping the wrong one
-// in is not hypothetical, and shifting ASCII into a poke table would write
-// arbitrary addresses in a running game once a frame. A header that does not
-// match loads zero entries and the module stays quiet for the whole file: a
-// wrong file behaves as no cheats, never as garbage cheats.
+// The magic is a safety interlock, not decoration. The slot accepts a plain
+// libretro .cht as well, so ASCII arriving here is expected rather than
+// hypothetical, and shifting it into a poke table would write arbitrary
+// addresses in a running game once a frame. A header that does not match loads
+// zero entries and the module stays quiet for the whole file: ASCII behaves as
+// no cheats, never as garbage cheats.
+//
+// That makes this safe but not yet complete. A .cht currently loads nothing at
+// all, because there is no ASCII parser beside this to route it to, and the
+// overlay's cheat names can only come from one (`cheatN_desc`). pocket-gba
+// carries both and prefers the .cht for exactly that reason; see PLAN.md S4.
 //
 // ---------------------------------------------------------- the handshakes --
 //

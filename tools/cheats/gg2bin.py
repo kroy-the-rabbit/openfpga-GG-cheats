@@ -9,8 +9,8 @@
 # a file here. rtl/gg/cheat_binloader.sv is the other half of the contract and
 # documents the format; this writes it.
 #
-#   python3 tools/cheats/cht2bin.py in.cht out.chtbin
-#   python3 tools/cheats/cht2bin.py --all in.cht out.chtbin
+#   python3 tools/cheats/gg2bin.py in.cht out.chtbin
+#   python3 tools/cheats/gg2bin.py --all in.cht out.chtbin
 #
 # ------------------------------------------------------------ what it emits --
 #
@@ -48,7 +48,7 @@
 import re
 import sys
 
-from verify_genie import decode as genie_decode
+from ggcht import decode as genie_decode
 
 MAGIC = b"GGCH"
 VERSION = 1

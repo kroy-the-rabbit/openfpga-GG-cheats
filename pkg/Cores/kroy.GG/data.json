@@ -31,10 +31,11 @@
         "required": false,
         "parameters": "0x205",
         "extensions": [
+          "cht",
           "chtbin"
         ],
         "address": "0x50000000",
-        "size_maximum": "0x1000"
+        "size_maximum": "0x100000"
       }
     ]
   }

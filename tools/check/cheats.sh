@@ -14,8 +14,8 @@ cd "$REPO"
 python3 - <<'PY'
 import sys
 sys.path.insert(0, "tools/cheats")
-from cht2bin import convert, MAGIC, MAX_CODES
-from verify_genie import decode
+from gg2bin import convert, MAGIC, MAX_CODES
+from ggcht import decode
 
 def cht(*codes):
     out = [f"cheats = {len(codes)}"]

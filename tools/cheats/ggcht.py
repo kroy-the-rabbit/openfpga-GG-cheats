@@ -13,7 +13,7 @@
 # correct decode predicts the ROM. Run against a ROM set and the codes agree
 # or they do not.
 #
-#   python3 tools/cheats/verify_genie.py <romdir> <chtdir>
+#   python3 tools/cheats/ggcht.py <romdir> <chtdir>
 #
 # Only addresses below 0x4000 are counted. Above that the Z80 address is
 # bank-switched, so no fixed ROM offset exists to compare against and the test
@@ -110,6 +110,6 @@ def main(romdir, chtdir):
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print(__doc__.strip().split("\n\n")[0], file=sys.stderr)
-        print("usage: verify_genie.py <romdir> <chtdir>", file=sys.stderr)
+        print("usage: ggcht.py <romdir> <chtdir>", file=sys.stderr)
         sys.exit(2)
     sys.exit(main(sys.argv[1], sys.argv[2]))
