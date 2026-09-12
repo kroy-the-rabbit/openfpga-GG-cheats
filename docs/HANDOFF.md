@@ -124,6 +124,28 @@ saves took:
    `PLAN.md` §9.4 decides whether that is APF sleep, MiSTer savestates, or
    neither.
 
+P2 is cheats, and stage 1 of three is built and fitted:
+
+1. **Done, fitted, not yet on hardware.** Both mechanisms are wired. Work RAM
+   became a `dpram` so `cheat_poker` can write Pro Action Replay pokes on port
+   B once a frame, beside the cold-reset clear that already owned that port;
+   the Game Genie half needed no new engine, because `system.vhd`'s `CODES`
+   instance has been idle since P0 and only wanted a code word. One slot feeds
+   both: `cheat_binloader.sv` splits the file on bit 127 of each entry. Two
+   seeds, 6,779 to 6,792 ALMs, 36.7%, and timing improved rather than
+   degraded; `BASELINE.md` has the numbers and explains why the block memory
+   went *down* by 8 KB.
+2. **Not started: the overlay.** `cheat_font.sv` and `cheat_titles.sv` are
+   byte-identical between the two siblings and port unchanged.
+   `cheat_osd.sv`'s native panel is 156x144, sized for the Game Boy's raster,
+   which is this machine's too; take the PC Engine copy for its `COL0`/`ROW0`
+   inset. `interact.json` has no overlay switch yet on purpose, and
+   `0xF000010C` is already reserved for it in `core_top.v`.
+3. **Not started: the converter.** `tools/cheats` has to decode Game Genie
+   XXX-XXX-XXX and Pro Action Replay xxAAAA-DD into the `.chtbin` that
+   `cheat_binloader.sv` documents. Neither sibling has a Game Genie decoder to
+   copy, so see `PLAN.md` S4 and S9 for what the reference has to be.
+
 ## Rules that hold here as in every sibling
 
 * Builds on the runners only, through `runner-build`, see below. The

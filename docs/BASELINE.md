@@ -179,6 +179,59 @@ numbers ranged 0.075 to 0.136 ns across its two seeds, so P1 sits just below
 that range, consistently, not as noise. Still positive on both corners
 checked; worth a glance if a later change tightens it further.
 
+## P2 stage 1, both cheat mechanisms
+
+Two seeds on one commit, so this is a real pair rather than two builds that
+differ in their docs.
+
+| commit | seed | runner | ALMs | % | M10K | mem bits | registers | worst setup | worst hold | elapsed |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `379ff5c` | 1 | sisko | 6,779 | 36.7 | 77 / 308 | 600,928 | 10,493 | +2.759 `clk_74a` | +0.125 `divclk` | 303 s |
+| `379ff5c` | 3 | sisko2 | 6,792 | 36.8 | 77 / 308 | 600,928 | 10,542 | +2.763 `clk_74a` | +0.085 `divclk` | 301 s |
+
+**+712 to +725 ALMs over P1, and timing got better rather than worse.** That
+was the thing this build was run to find out: P0 pruned `CODES` entirely, so
+this is the first fit with a 32-way comparator back in the Z80 read path
+(`system.vhd:525`), and P1's hold margin was already the tightest this project
+had produced at 0.068 to 0.072 ns. It is now 0.085 to 0.125, and the worst
+setup corner moved off `sdram_clk` to `clk_74a` with 2.76 ns in hand. The
+comparator is wide but it is one level deep and the fitter had a third of the
+device to spread it into.
+
+Where the ALMs went, from the by-entity table at seed 1:
+
+| entity | ALMs | registers |
+|---|---:|---:|
+| `CODES:GAMEGENIE` | 408.2 | 1,101 |
+| `cheat_binloader:chtbin` | 52.9 | 251 |
+| `data_loader:cheat_loader` | 44.4 | 148 |
+| `cheat_poker:poker` | 19.2 | 35 |
+
+That is 525 of the 712. The rest is glue: the second work RAM port, the two
+settings registers, and the clock domain crossings for four readouts.
+
+### The block memory went down, and that is correct
+
+600,928 bits against P1's 665,792, and 77 M10K against 84. Adding a feature
+does not shrink memory, so the drop was chased rather than accepted, and it
+resolves exactly:
+
+| | bits | M10K |
+|---|---:|---:|
+| work RAM, `spram` to `dpram` | -65,536 | -8 |
+| `cheat_poker`'s table | +672 | +1 |
+| net | **-64,864** | **-7** |
+
+**P0 and P1 shipped 8 KB of work RAM that nothing could reach.** `ram_inst`
+was declared `widthad_a(14)`, 16 KB, but a Game Gear has 8 KB at C000-DFFF and
+the CPU side only ever drives `ram_a[12:0]`. Under `spram` the fitter could not
+prove the top half dead, because one port carried both the CPU's reads and the
+cold-clear's full 14-bit walk. Under `dpram` the CPU owns port A and reads only
+the low 8 KB, the clear moved to port B, and `q_b` goes nowhere: the top half
+is now written and never read, so the fitter removed it. The clear's walk still
+counts to 16,383 and simply wraps, clearing the low 8 KB twice, which costs
+nothing and is why this was left alone rather than narrowed to match.
+
 ## Hardware
 
 2026-09-10, on a Pocket, from `Assets/gg/common`: a top-down RPG boots and
