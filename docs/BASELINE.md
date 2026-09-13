@@ -311,13 +311,61 @@ codes until the 32 slots filled. Reachable by changing the cheat file from the
 Pocket's menu without power cycling. Found while wiring the second reader, which
 needs the same edge to clear its parser.
 
-### The title store is in the fit, the overlay is not
+### Stage 2 as committed (25572cb): 38.2% and 38.1%, timing met
 
-`cheat_titles.sv` is wired to the parser's `desc_*` ports so the description
-path is measured rather than stripped. Its one read port sits on the first
-character of the first title and reports it at `CT:`, which is the only view of
-the store until `cheat_osd.sv` exists and takes that port over. `CF:` reads back
-which reader claimed the file.
+Two seeds of the .cht reader alone, cheat_osd not yet in the tree at fit time:
+
+| | seed 1 (sisko) | seed 3 (sisko2) |
+|---|---:|---:|
+| ALMs | 7,068 / 18,480, 38.2% | 7,043 / 18,480, 38.1% |
+| registers | 10,936 | 10,955 |
+| block memory | 608,096 bits, 79 blocks | 608,096 bits, 79 blocks |
+| worst setup | 2.052 ns | 2.579 ns |
+| worst hold | 0.103 ns (`mf_pllbase` divclk) | 0.132 ns (`clk_74a`) |
+
+Both meet timing. Both reports are `build/gg/report.txt` as fetched; seed 3's
+fetch landed in the same path and overwrote seed 1's copy on disk, so seed 1's
+numbers above are transcribed here rather than re-fetchable without rerunning
+that seed.
+
+### The overlay: two bugs, both found by decoding the picture back to text
+
+`cheat_titles.sv` is wired to the parser's `desc_*` ports, and `cheat_osd.sv`
+now draws from it: ink white on a black panel, composited into `vid_rgb` before
+the video output stage, paced by `de` alone since this core has no `ce_pix`. Not
+yet fitted.
+
+Ported from `pocket-gbc`'s copy, not `pocket-pcengine`'s: a Game Gear draws
+160x144, the same raster the Game Boy does, so the panel fills the screen with
+no inset needed. `HANDOFF.md`'s P2-stage-1 note to take the PC Engine copy for
+its `COL0`/`ROW0` inset was wrong; corrected there and in the module.
+
+`tools/sim/tb_cheat_osd.sv` + `tools/sim/run_osd.py` parse a `.cht`, draw one
+frame, decode the pixels back through the font, and assert on the words. Both
+bugs below were invisible in the raw ASCII-art picture, which looked like a
+plausible, readable panel either time; only decoding it back to text caught
+them.
+
+1. **The RTL wrote a column's cell from the next column's title data.**
+   `cheat_titles` registers its RAM read once, so `title_char`/`title_len` for a
+   column are valid one cycle after the address is presented. The module
+   compared them against a column counter delayed by one stage too many
+   (three, where the RAM's own latency needs two), so the write for column N
+   used data for N+1 - genuinely unwritten one column early - leaking
+   uninitialised RAM into the last visible character of every title. Found by
+   tracing `title_char` against the pipeline's delay registers cycle by cycle
+   in simulation and comparing to the expected string. Fixed by collapsing the
+   pipeline to two stages and comparing where the data actually lands.
+2. **The render testbench had two of its own bugs**, not in the RTL: its row
+   buffer was one character wider than it filled, leaving an uninitialised
+   leading glyph on every decoded row; and it sampled each pixel one clock edge
+   later than intended, because `de` is raised before the first edge of a row
+   while the pixel counters are still mid-transition from blanking.
+
+`tools/sim/run_osd.py` passes all three of its cases (three titles, 26
+character truncation, "no cheats loaded") with 0 mismatches.
+`tools/sim/run.py` still passes all 818 corpus files afterward, confirming the
+parser itself was never in question.
 
 ## Hardware
 

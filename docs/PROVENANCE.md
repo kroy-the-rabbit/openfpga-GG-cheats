@@ -53,6 +53,7 @@ by decision.
 | `rtl/gg/cheat_font.sv` | `pocket-pcengine`, byte-identical in every sibling | nothing. `tools/cheats/genfont.py --check` regenerates it and confirms the copy |
 | `rtl/gg/cheat_titles.sv` | `pocket-pcengine`, byte-identical in every sibling | nothing |
 | `rtl/gg/cheat_poker.sv` | `pocket-pcengine` | comments, and the work RAM it writes into. Logic unchanged |
+| `rtl/gg/cheat_osd.sv` | `pocket-gbc`, not `pocket-pcengine` | comments; the pipeline collapsed from three delay stages to two, matching `cheat_titles`' true one-cycle read latency instead of the two the sibling comment assumed |
 | `tools/cheats/genfont.py` | `pocket-gbc` | the output path, `src/gb/` to `rtl/gg/` |
 
 `rtl/gg/cheat_binloader.sv` is this project's, but its shape is

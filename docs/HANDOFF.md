@@ -124,8 +124,11 @@ saves took:
    `PLAN.md` §9.4 decides whether that is APF sleep, MiSTer savestates, or
    neither.
 
-P2 is cheats. Stages 1 and 3 are done and stage 2 is half done: the `.cht`
-reader is written and cross-checked, the overlay it feeds is not:
+P2 is cheats, all three stages done. Stage 2's `.cht` reader is committed and
+fitted (`25572cb`, 38.2%/38.1%, timing met on both seeds, numbers in
+`BASELINE.md`); the overlay that reads the title store it feeds is written and
+passing its own render-and-decode check, not yet fitted. See "P2 stage 2,
+finished: the overlay" below.
 
 1. **Done, fitted, not yet on hardware.** Both mechanisms are wired. Work RAM
    became a `dpram` so `cheat_poker` can write Pro Action Replay pokes on port
@@ -136,8 +139,7 @@ reader is written and cross-checked, the overlay it feeds is not:
    seeds, 6,779 to 6,792 ALMs, 36.7%, and timing improved rather than
    degraded; `BASELINE.md` has the numbers and explains why the block memory
    went *down* by 8 KB.
-2. **Half done: the `.cht` reader is in, the overlay is not.**
-   `rtl/gg/cheat_loader.sv` parses a plain libretro `.cht` into both
+2. **Done.** `rtl/gg/cheat_loader.sv` parses a plain libretro `.cht` into both
    mechanisms, and `core_top.v` sniffs the first four bytes for "GGCH" to
    choose between it and `cheat_binloader.sv`. Both readers see every byte and
    only their outputs are muxed, which is safe because the verdict lands at
@@ -158,13 +160,7 @@ reader is written and cross-checked, the overlay it feeds is not:
        CHT_DB="$HOME/.config/retroarch/cheats/Sega - Game Gear" tools/sim/run.py
        tools/sim/run.py --idle
 
-   `cheat_titles.sv` is wired and holds the names. `cheat_osd.sv` is what is
-   left: its native panel is 156x144, sized for the Game Boy's raster, which is
-   this machine's too, so take the PC Engine copy for its `COL0`/`ROW0` inset.
-   `interact.json` still has no overlay switch on purpose and `0xF000010C` is
-   reserved for it. Until the overlay exists `CT:` is the only view of the title
-   store: it reads the first character and the length of the first cheat's name,
-   off a read port the overlay will take over.
+   The overlay that draws these titles is its own subsection below.
 3. **Done, on the host side.** `tools/cheats/gg2bin.py` writes the `.chtbin`
    that `cheat_binloader.sv` reads, both code kinds. All 818 libretro Game Gear
    files convert with no crash and 7,133 entries. The Game Genie decode is in
@@ -173,7 +169,58 @@ reader is written and cross-checked, the overlay it feeds is not:
    positions against the RTL's documented layout and is in `make test`.
    Untested on hardware, which needs the overlay above to be worth using.
 
-## Rules that hold here as in every sibling
+## P2 stage 2, finished: the overlay
+
+`rtl/gg/cheat_osd.sv` draws the cheat list over the game picture, ported from
+`pocket-gbc`'s copy rather than `pocket-pcengine`'s: a Game Gear draws 160x144,
+the same raster the Game Boy does, so the geometry needs no inset and the
+`COL0`/`ROW0` parameters `PLAN.md` expected to need do not exist here. That note
+was wrong; corrected in the module's own header.
+
+Wired on `clk_vid`: `de` alone paces it, since this core has no `ce_pix` to hand
+over (one pixel is one `clk_vid` edge already). `cheat_titles`' read port moved
+from the temporary `CT:` probe to the overlay; `core_top.v` composites
+`osd_active`/`osd_ink` over `vid_rgb` before the video output stage, ink white
+on a black panel. The "Cheat overlay" switch is back at `0xF000010C`, first in
+`interact.json`'s array beside "Cheats". `CT:` at `0xF0000218` now reads the two
+counts the header draws from instead of a raw title character, so a count that
+never crossed into `clk_74a` reads back as zero rather than looking identical
+to a genuinely empty file.
+
+**Two independent bugs, both found and fixed by a render-and-decode check**
+(`tools/sim/tb_cheat_osd.sv` + `tools/sim/run_osd.py`, parallel to
+`tools/sim/run.py` for the parser): parse a `.cht`, draw one frame, decode the
+pixels back through the font, and assert on the words. Neither bug would have
+been visible from eyeballing the ASCII-art picture alone; both needed decoding
+it back to text.
+
+1. **The pipeline compared title data one stage later than it arrives.**
+   `cheat_titles` registers its RAM read once, so `title_char`/`title_len` for
+   a column are valid one cycle after `title_col` asks for it. The module
+   compared them against a three-stage-delayed copy of the column counter
+   instead of a two-stage one, so the write for column N used column N+1's
+   title data - genuinely unwritten one column early - and leaked
+   uninitialised RAM into the last visible character of every title. Found by
+   tracing `title_char` against the pipeline's delay registers cycle by cycle
+   in simulation and comparing to the expected string; not visible from the
+   picture, which still looked like a plausible, readable panel. Fixed by
+   collapsing the pipeline to two stages (address, then write) and comparing
+   at the stage where the data actually lands.
+2. **The render testbench itself had two bugs**, both in
+   `tools/sim/tb_cheat_osd.sv`, not the RTL: its row buffer was declared one
+   character wider than it filled, leaving an uninitialised leading glyph on
+   every decoded row, and it sampled each pixel one clock edge later than the
+   pixel it meant to read, because `de` is raised before the first clock edge
+   of a row while the pixel counters are still mid-transition. Both were
+   invisible until the picture was decoded back to text; the raw ASCII-art
+   picture looked fine either way.
+
+`tools/sim/run_osd.py` now passes all three of its cases (three titles, 26
+character truncation, "no cheats loaded") with 0 mismatches, and
+`tools/sim/run.py` still passes all 818 corpus files afterward, confirming the
+parser was never in question.
+
+## Rules that hold here as in every sibling## Rules that hold here as in every sibling
 
 * Builds on the runners only, through `runner-build`, see below. The
   Quartus image is private. CI verifies a published package and builds

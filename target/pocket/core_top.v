@@ -409,7 +409,7 @@ module core_top (
         32'hF000020C: settings_rd_data <= {12'd0, cheat_bytes_74};
         32'hF0000210: settings_rd_data <= {31'd0, cheat_overrun_74};
         32'hF0000214: settings_rd_data <= {31'd0, cheat_is_bin_74};
-        32'hF0000218: settings_rd_data <= {21'd0, title_len_74, title_char_74};
+        32'hF0000218: settings_rd_data <= {20'd0, osd_codes_74, osd_titles_74};
         default: settings_rd_data <= 32'd0;
       endcase
     end
@@ -630,14 +630,22 @@ module core_top (
   synch_3 s_co (cheat_overrun, cheat_overrun_74, clk_74a);
 
   wire cheat_is_bin;
-  wire [5:0] title_char;
-  wire [4:0] title_len;
   wire cheat_is_bin_74;
-  wire [5:0] title_char_74;
-  wire [4:0] title_len_74;
+  wire [5:0] osd_titles_74, osd_codes_74;
   synch_3 s_cf (cheat_is_bin, cheat_is_bin_74, clk_74a);
-  synch_3 #(6) s_tc (title_char, title_char_74, clk_74a);
-  synch_3 #(5) s_tl (title_len, title_len_74, clk_74a);
+
+  // The overlay lives on clk_vid, so what it reads crosses into that domain
+  // here. de and v_blank do not: they are the same clk_sys signals the video
+  // stage below already samples on clk_vid, statically timed inside one clock
+  // group by core_constraints.sdc, and proven on hardware since P0.
+  wire reset_n_v, cheats_osd_v;
+  wire [5:0] osd_titles_v, osd_codes_v;
+  synch_3 s_resetv (reset_n, reset_n_v, clk_vid);
+  synch_3 s_osdv (cheats_osd, cheats_osd_v, clk_vid);
+  synch_3 #(6) s_ot (osd_titles, osd_titles_v, clk_vid);
+  synch_3 #(6) s_oc (osd_codes, osd_codes_v, clk_vid);
+  synch_3 #(6) s_ot74 (osd_titles, osd_titles_74, clk_74a);
+  synch_3 #(6) s_oc74 (osd_codes, osd_codes_74, clk_74a);
 
   // ==========================================================================
   // ROM in
@@ -761,6 +769,14 @@ module core_top (
   assign cheat_bytes   = cheat_bin ? bin_bytes : asc_bytes;
   assign cheat_overrun = cheat_bin ? bin_overrun : asc_overrun;
 
+  // What the overlay draws its header from. Cheats only have names when a .cht
+  // was read, so a .chtbin reports none and the header says so instead of
+  // drawing blank rows. Codes are the two mechanisms together, which is also
+  // what the 32 slot ceiling counts.
+  wire [5:0] osd_titles = cheat_bin ? 6'd0 : asc_decl;
+  wire [6:0] osd_sum    = {1'b0, cheat_count} + {1'b0, poke_code_total};
+  wire [5:0] osd_codes  = osd_sum[5:0];
+
   cheat_binloader chtbin (
       .clk  (clk_sys),
       .reset(cheat_reset),
@@ -817,10 +833,15 @@ module core_top (
       .desc_end  (cht_desc_end)
   );
 
-  // The names, for the overlay that does not exist yet. Until it does, the read
-  // port sits on the first character of the first title and reports it at CT:,
-  // which is enough to tell a file that parsed from one that did not. The
-  // overlay takes this port over when it lands.
+  // The names. Written by the parser on clk_sys and read by the overlay on
+  // clk_vid, which is what cheat_titles is a dual clock RAM for.
+  wire [4:0] osd_group, osd_col;
+  wire [5:0] osd_char, osd_font_ch;
+  wire [4:0] osd_len;
+  wire [2:0] osd_font_row;
+  wire [7:0] osd_font_bits;
+  wire       osd_active, osd_ink;
+
   cheat_titles titles (
       .wr_clk  (clk_sys),
       .wr_reset(cheat_reset),
@@ -831,11 +852,43 @@ module core_top (
       .wr_char (cht_desc_char),
       .wr_end  (cht_desc_end),
 
-      .rd_clk  (clk_sys),
-      .rd_group(5'd0),
-      .rd_col  (5'd0),
-      .rd_char (title_char),
-      .rd_len  (title_len)
+      .rd_clk  (clk_vid),
+      .rd_group(osd_group),
+      .rd_col  (osd_col),
+      .rd_char (osd_char),
+      .rd_len  (osd_len)
+  );
+
+  cheat_font font (
+      .ch  (osd_font_ch),
+      .row (osd_font_row),
+      .bits(osd_font_bits)
+  );
+
+  // One pixel per clk_vid edge, so de alone paces it and there is no ce_pix to
+  // hand over. The panel is 156x144 of the 160x144 raster: it fills the screen.
+  cheat_osd osd (
+      .clk    (clk_vid),
+      .reset  (~reset_n_v),
+
+      .show   (cheats_osd_v),
+      .de     (de),
+      .v_blank(core_vbl),
+
+      .title_count(osd_titles_v),
+      .code_count (osd_codes_v),
+
+      .title_group(osd_group),
+      .title_col  (osd_col),
+      .title_char (osd_char),
+      .title_len  (osd_len),
+
+      .font_ch  (osd_font_ch),
+      .font_row (osd_font_row),
+      .font_bits(osd_font_bits),
+
+      .active(osd_active),
+      .ink   (osd_ink)
   );
 
   // ==========================================================================
@@ -1026,7 +1079,10 @@ module core_top (
 
     if (de) begin
       video_de_reg  <= 1;
-      video_rgb_reg <= {vid_r, vid_g, vid_b};
+      // Ink white, panel black. Drawn over the picture rather than blended, so
+      // the text stays readable on whatever the game has put up behind it.
+      video_rgb_reg <= osd_active ? (osd_ink ? 24'hFFFFFF : 24'h000000)
+                                  : {vid_r, vid_g, vid_b};
     end
 
     if (hs_delay > 0) hs_delay <= hs_delay - 3'd1;

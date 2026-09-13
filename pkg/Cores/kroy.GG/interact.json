@@ -15,6 +15,18 @@
         "value": "0x00000001"
       },
       {
+        "name": "Cheat overlay",
+        "id": 21,
+        "type": "check",
+        "enabled": true,
+        "address": "0xF000010C",
+        "persist": false,
+        "writeonly": true,
+        "mask": "0xFFFFFFFE",
+        "defaultval": "0x00000000",
+        "value": "0x00000001"
+      },
+      {
         "name": "Reset core",
         "id": 1,
         "type": "action",
