@@ -23,6 +23,8 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
+source "$ROOT/tools/podman/version.sh"
+VERSION=$(pocket_version "${RELEASE_NAME:-}")
 
 PODMAN=${PODMAN:-podman}
 IMAGE=${IMAGE:-localhost/pocket-quartus:25.1std}
@@ -41,7 +43,7 @@ if [[ -z "${DIST_IN_IMAGE:-}" && -z "${DIST_NATIVE:-}" && -z "${QUARTUS_ROOTDIR:
     -e DIST_IN_IMAGE=1 \
     -e BUILD_NAME="${BUILD_NAME:-}" \
     -e REV="${REV:-}" \
-    -e RELEASE_NAME="${RELEASE_NAME:-}" \
+    -e RELEASE_NAME="$VERSION" \
     "$IMAGE" bash /work/tools/podman/dist.sh
 fi
 
@@ -86,30 +88,14 @@ echo
 echo "   Copy the contents of $OUT onto the Pocket's SD card root."
 
 
-# A tagged build carries the tag as its version, so the Pocket shows what was
-# actually released rather than whatever the checked-in manifest last said.
-# Stamped into the packaged copy only; the repo manifest is left alone.
-VERSION="$(perl -0777 -ne '
-  exit unless /"metadata"\s*:\s*\{(.*?)\n  \}/s;
-  my $meta = $1;
-  print $1 if $meta =~ /"version"\s*:\s*"([^"]*)"/;
-' "$CORE_JSON")"
-if [ -n "${RELEASE_NAME:-}" ]; then
-  VERSION="${RELEASE_NAME#v}"
-  if [ "${#VERSION}" -gt 31 ]; then
-    echo "version too long for APF: $VERSION" >&2
-    exit 1
-  fi
-  tmp="$(mktemp)"
-  # "version_required" is left alone: the pattern needs the quote straight
-  # after the key.
-  V="$VERSION" D="$(date -u +%Y-%m-%d)" perl -0777 -pe '
-    s/("version"\s*:\s*)"[^"]*"/$1"$ENV{V}"/;
-    s/("date_release"\s*:\s*)"[^"]*"/$1"$ENV{D}"/;
-  ' "$OUT/Cores/$CORE_DIR/core.json" > "$tmp"
-  mv "$tmp" "$OUT/Cores/$CORE_DIR/core.json"
-  echo "   stamped   version=$VERSION"
-fi
+# Stamp the package; the checked-in manifest remains a template.
+tmp="$(mktemp)"
+V="$VERSION" D="$(pocket_version_date "$VERSION")" perl -0777 -pe '
+  s/("version"\s*:\s*)"[^"]*"/$1"$ENV{V}"/;
+  s/("date_release"\s*:\s*)"[^"]*"/$1"$ENV{D}"/;
+' "$OUT/Cores/$CORE_DIR/core.json" > "$tmp"
+mv "$tmp" "$OUT/Cores/$CORE_DIR/core.json"
+echo "   stamped   version=$VERSION"
 
 # Release archive, laid out so it unzips straight onto the SD card root. Named
 # after the core and its version, matching the sibling forks.

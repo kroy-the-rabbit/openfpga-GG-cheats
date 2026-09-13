@@ -3,7 +3,7 @@ MiSTer-devel/SMS_MiSTer. SD-ROM gameplay, audio, controls, battery saves,
 Game Genie ROM patches, Pro Action Replay RAM writes and the named cheat
 overlay are confirmed on hardware. Switching between cheat files is tested.
 
-Download `kroy.GG_0.9999.edc23d4.zip` and merge `Assets`, `Cores` and
+Download `kroy.GG_0.9999.20260913.zip` and merge `Assets`, `Cores` and
 `Platforms` into the SD root. Put `.gg` ROMs in `Assets/gg/common/`.
 No BIOS is required. Put `Game.gg.cht` beside `Game.gg` and enable the
 desired cheats in that file, then turn on **Cheats** in the core menu.
