@@ -1,5 +1,5 @@
-# Build and measurement harness for the Pocket Game Gear core. Nothing builds
-# yet: there is no Quartus project until P0 (docs/PLAN.md).
+# Build and measurement harness for the Pocket Game Gear core.
+# Routine synthesis runs through the shared runner-build interface.
 #
 # Quartus, containerised (see tools/podman/README.md):
 #

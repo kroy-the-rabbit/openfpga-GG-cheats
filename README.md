@@ -2,7 +2,8 @@
 
 A Pocket core for the Sega Game Gear, ported by hand from
 [MiSTer-devel/SMS_MiSTer](https://github.com/MiSTer-devel/SMS_MiSTer), with a
-cheat engine and support for Game Gear cartridges through Analogue's adapter.
+cheat engine, SD-ROM loading and battery saves. Physical cartridge support
+is not implemented.
 
 **Based on SMS_MiSTer by Sorgelig**, which is a port of Ben's Sega Master
 System for the Papilio, with the T80, jt89, VM2413 and the VDP by their
@@ -12,21 +13,27 @@ cheat engine.
 
 ## Status
 
-**P0 is done: it fits, meets timing on two seeds, and a `.gg` boots on a
-Pocket with video, audio, controls and the ROM load diagnostic all confirmed
-clean.** The port takes **5,865 to 5,876 ALMs, a third of the Cyclone V**; see
-[docs/BASELINE.md](docs/BASELINE.md). Phases are in
-[docs/PLAN.md](docs/PLAN.md).
+The first release is `v0.9999.edc23d4`. ROMs, video, audio, controls, saves,
+both cheat mechanisms and the named overlay are confirmed on hardware.
+The build uses 7,291 ALMs (39.5 %) and passes every timing category.
 
-| | |
+| Feature | Status |
 |---|---|
-| Upstream vendored at `1fc3c121`, verified by `make test` | done |
-| Build harness, the four runners through the orchestrator | done |
-| Quartus project, `core_top.v`, `gg_core.sv`, manifests | fits at 32%, timing met |
-| ROM from the card into SDRAM | boots on hardware |
-| Saves | **not started** |
-| Cheats | **not started** |
-| Cartridge adapter | **not started** |
+| Upstream vendored at `1fc3c121` | Verified by `make test` |
+| SD ROMs, video, audio and controls | Tested on Pocket |
+| Battery saves | Eternal Legend saved and loaded after a power cycle |
+| Game Genie ROM patches and Pro Action Replay RAM writes | Tested on Pocket |
+| `.cht`, `.chtbin` and named overlay | Tested, including switching cheat files |
+| Physical cartridge adapter, sleep and savestates | Not implemented |
+
+Merge the release ZIP's `Assets`, `Cores` and `Platforms` into the SD root.
+Put `.gg` ROMs in `Assets/gg/common/`. No BIOS is needed. Put `Game.gg.cht`
+beside `Game.gg`, select the cheats in the file and turn on **Cheats** in the
+core menu. The cheat and overlay switches start off and are not persisted.
+`.chtbin` also works, without names. The shared table holds 32 codes.
+
+The first package uses a plain platform image and the Pocket's default core
+icon. See [docs/PROVENANCE.md](docs/PROVENANCE.md) for source attribution.
 
 The Game Gear runs at 160 x 144, which the Pocket's 1600 x 1440 display shows
 at exactly ten times, so there is one video mode and no scaling to argue with.

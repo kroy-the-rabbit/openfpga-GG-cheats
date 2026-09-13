@@ -1,5 +1,22 @@
 # Handoff
 
+## Release state, 2026-09-12
+
+Public repository: `kroy-the-rabbit/openfpga-GG-cheats`.
+The first release uses exact built commit `edc23d4`: SD ROMs, battery saves,
+Game Genie and Pro Action Replay cheats, `.cht`/`.chtbin`, and the named
+overlay are confirmed on Pocket. Cartridge support and sleep are not
+implemented. Platform artwork is plain and the core uses the default icon.
+
+The tested bitstream SHA-256 is
+`ea3e384af1e1b80f663a70f2d3847c5dfe97c3a456153199b315d0985d701efc`.
+The fit uses 7,291 ALMs, with +2.259 ns setup and +0.111 ns hold.
+All timing categories pass. Release assets are under
+`build/releases/0.9999.edc23d4/`.
+
+<details>
+<summary>Historical phase notes, superseded by the release state above</summary>
+
 State as of 2026-09-11. Read `PLAN.md` first, then `BASELINE.md`.
 
 ## Where it stands
@@ -261,3 +278,5 @@ by commit and refuses when a runner holds two of the same commit, so give a
 seed retry of one commit a different runner rather than the same one.
 `report.txt` is the gate, not the exit code.
 
+
+</details>
