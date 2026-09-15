@@ -327,6 +327,9 @@ module core_top (
       32'h2xxxxxxx: begin
         bridge_rd_data <= save_rd_data;
       end
+      32'h4xxxxxxx: begin
+        bridge_rd_data <= ss_rd_data;
+      end
       32'hF0xxxxxx: begin
         bridge_rd_data <= settings_rd_data;
       end
@@ -437,24 +440,26 @@ module core_top (
 
   wire dataslot_allcomplete;
 
-  // No APF savestates yet: docs/PLAN.md 9.4 decides between MiSTer's
-  // savestates.sv and the APF mechanism once P0 has measured what is free.
-  wire savestate_supported = 0;
-  wire [31:0] savestate_addr = 0;
-  wire [31:0] savestate_size = 0;
-  wire [31:0] savestate_maxloadsize = 0;
+  // Savestates: MiSTer's engine inside gg_core, the memory and the APF
+  // handshake in savestate_apf. The window is the whole 64 KB buffer; the
+  // state itself ends below 60 KB and the rest reads back as whatever the
+  // block RAM held.
+  wire savestate_supported = 1;
+  wire [31:0] savestate_addr = 32'h40000000;
+  wire [31:0] savestate_size = 32'd65536;
+  wire [31:0] savestate_maxloadsize = 32'd65536;
 
   wire savestate_start;
-  wire savestate_start_ack = 0;
-  wire savestate_start_busy = 0;
-  wire savestate_start_ok = 0;
-  wire savestate_start_err = 0;
+  wire savestate_start_ack;
+  wire savestate_start_busy;
+  wire savestate_start_ok;
+  wire savestate_start_err;
 
   wire savestate_load;
-  wire savestate_load_ack = 0;
-  wire savestate_load_busy = 0;
-  wire savestate_load_ok = 0;
-  wire savestate_load_err = 0;
+  wire savestate_load_ack;
+  wire savestate_load_busy;
+  wire savestate_load_ok;
+  wire savestate_load_err;
 
   wire osnotify_inmenu;
 
@@ -984,6 +989,50 @@ module core_top (
   wire core_hs, core_vs, core_hbl, core_vbl;
   wire signed [15:0] audio_l, audio_r;
 
+  // ==========================================================================
+  // Savestates
+  // ==========================================================================
+  wire        ss_save, ss_load, ss_freeze, ss_restored;
+  wire [28:0] ss_ddram_addr;
+  wire [63:0] ss_ddram_din, ss_ddram_dout;
+  wire        ss_ddram_we, ss_ddram_rd, ss_ddram_dout_ready, ss_ddram_busy;
+  wire [31:0] ss_rd_data;
+
+  savestate_apf ss (
+      .clk_74a(clk_74a),
+      .clk_sys(clk_sys),
+      .reset_n(~core_reset),
+
+      .savestate_start     (savestate_start),
+      .savestate_start_ack (savestate_start_ack),
+      .savestate_start_busy(savestate_start_busy),
+      .savestate_start_ok  (savestate_start_ok),
+      .savestate_start_err (savestate_start_err),
+      .savestate_load      (savestate_load),
+      .savestate_load_ack  (savestate_load_ack),
+      .savestate_load_busy (savestate_load_busy),
+      .savestate_load_ok   (savestate_load_ok),
+      .savestate_load_err  (savestate_load_err),
+
+      .bridge_wr           (bridge_wr),
+      .bridge_endian_little(bridge_endian_little),
+      .bridge_addr         (bridge_addr),
+      .bridge_wr_data      (bridge_wr_data),
+      .bridge_rd_data      (ss_rd_data),
+
+      .ss_save         (ss_save),
+      .ss_load         (ss_load),
+      .ss_freeze       (ss_freeze),
+      .ss_restored     (ss_restored),
+      .ddram_addr      (ss_ddram_addr),
+      .ddram_din       (ss_ddram_din),
+      .ddram_we        (ss_ddram_we),
+      .ddram_rd        (ss_ddram_rd),
+      .ddram_dout      (ss_ddram_dout),
+      .ddram_dout_ready(ss_ddram_dout_ready),
+      .ddram_busy      (ss_ddram_busy)
+  );
+
   gg_core gg (
       .clk_sys   (clk_sys),
       .pll_locked(pll_core_locked_s),
@@ -1027,6 +1076,18 @@ module core_top (
       .bram_din (bram_din),
       .bram_wr  (bram_wr),
       .bram_dout(bram_dout),
+
+      .ss_save            (ss_save),
+      .ss_load            (ss_load),
+      .ss_freeze          (ss_freeze),
+      .ss_restored        (ss_restored),
+      .ss_ddram_addr      (ss_ddram_addr),
+      .ss_ddram_din       (ss_ddram_din),
+      .ss_ddram_we        (ss_ddram_we),
+      .ss_ddram_rd        (ss_ddram_rd),
+      .ss_ddram_dout      (ss_ddram_dout),
+      .ss_ddram_dout_ready(ss_ddram_dout_ready),
+      .ss_ddram_busy      (ss_ddram_busy),
 
       .dram_a    (dram_a),
       .dram_ba   (dram_ba),

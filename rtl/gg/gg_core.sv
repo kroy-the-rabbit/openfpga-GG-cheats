@@ -80,6 +80,22 @@ module gg_core (
     // ---- diagnostics ------------------------------------------------------
     output wire        rom_overrun,    // sticky: the ROM queue was overrun
 
+    // ---- savestates, clk_sys ----------------------------------------------
+    // Upstream's savestates.sv runs in here against the machine; its DDRAM
+    // bus and its two requests go up to target/pocket/savestate_apf.sv,
+    // which is the memory and the APF handshake.
+    input  wire        ss_save,
+    input  wire        ss_load,
+    output wire        ss_freeze,
+    output wire        ss_restored,     // z80_set: a load reached the end
+    output wire [28:0] ss_ddram_addr,
+    output wire [63:0] ss_ddram_din,
+    output wire        ss_ddram_we,
+    output wire        ss_ddram_rd,
+    input  wire [63:0] ss_ddram_dout,
+    input  wire        ss_ddram_dout_ready,
+    input  wire        ss_ddram_busy,
+
     // ---- backup RAM, second port, driven by the save slot ------------------
     input  wire [14:0] bram_addr,
     input  wire  [7:0] bram_din,
@@ -339,9 +355,9 @@ video video_inst (
     .smode_M2       (smode_M2),
     .smode_M3       (smode_M3),
     .smode_M4       (smode_M4),
-    .video_state_out(),
-    .video_state_in (22'd0),
-    .video_state_set(1'b0),
+    .video_state_out(ss_video_state_out),
+    .video_state_in (ss_video_state_in),
+    .video_state_set(ss_video_state_set),
     .x              (x),
     .y              (y),
     .vcounter_cpu   (vcounter_cpu),
@@ -372,11 +388,17 @@ wire [13:0] ram_b_addr = ram_clr_run ? ram_clr_addr : {1'b0, poke_addr};
 wire  [7:0] ram_b_data = ram_clr_run ? 8'h00       : poke_data;
 wire        ram_b_wren = ram_clr_run | poke_wr;
 
+// While a savestate is in flight the Z80 is frozen and the engine walks
+// port A instead, as SMS.sv does; `ram_q` feeds both.
+wire [13:0] ss_wram_A, ss_wram_WA;
+wire  [7:0] ss_wram_WD;
+wire        ss_wram_WE;
+
 dpram #(.widthad_a(14)) ram_inst (
     .clock_a  (clk_sys),
-    .address_a({1'b0, ram_a[12:0]}),
-    .wren_a   (ram_we),
-    .data_a   (ram_d),
+    .address_a(ss_freeze ? (ss_wram_WE ? ss_wram_WA : ss_wram_A) : {1'b0, ram_a[12:0]}),
+    .wren_a   (ss_freeze ? ss_wram_WE : ram_we),
+    .data_a   (ss_freeze ? ss_wram_WD : ram_d),
     .q_a      (ram_q),
 
     .clock_b  (clk_sys),
@@ -391,7 +413,7 @@ cheat_poker poker (
     .reset     (reset_active),
     .enable    (cheats_en),
     .vblank    (vblank),
-    .blocked   (ram_clr_run),
+    .blocked   (ram_clr_run | ss_freeze),
 
     .code_wr   (poke_code_wr),
     .code_index(poke_code_index),
@@ -419,11 +441,15 @@ wire  [7:0] nvram_q;
 // block (system.vhd muxes nvram_a between them), so one save slot covers
 // both without this file caring which a cartridge uses. The init file is
 // upstream's, which fills cart RAM with FF the way an unwritten chip reads.
+wire [14:0] ss_nvram_A, ss_nvram_WA;
+wire  [7:0] ss_nvram_WD;
+wire        ss_nvram_WE;
+
 dpram #(.widthad_a(15), .init_file("rtl/nvram_ff.mif")) nvram_inst (
     .clock_a  (clk_sys),
-    .address_a(nvram_a),
-    .wren_a   (nvram_we),
-    .data_a   (nvram_d),
+    .address_a(ss_freeze ? (ss_nvram_WE ? ss_nvram_WA : ss_nvram_A) : nvram_a),
+    .wren_a   (ss_freeze ? ss_nvram_WE : nvram_we),
+    .data_a   (ss_freeze ? ss_nvram_WD : nvram_d),
     .q_a      (nvram_q),
     .clock_b  (clk_sys),
     .address_b(bram_addr),
@@ -450,10 +476,12 @@ wire [6:0] joy1_n = ~joy1;
 // ---------------------------------------------------------------------------
 system #(63) system_inst (
     .clk_sys            (clk_sys),
-    .ce_cpu             (ce_cpu),
-    .ce_vdp             (ce_vdp),
-    .ce_pix             (ce_pix_r),
-    .ce_sp              (ce_sp),
+    // Frozen for a savestate, as SMS.sv gates them. The video timing keeps
+    // its own ungated ce_pix so the display stays up.
+    .ce_cpu             (ss_freeze ? 1'b0 : ce_cpu),
+    .ce_vdp             (ss_freeze ? 1'b0 : ce_vdp),
+    .ce_pix             (ss_freeze ? 1'b0 : ce_pix_r),
+    .ce_sp              (ss_freeze ? 1'b0 : ce_sp),
     .turbo              (1'b0),
 
     .gg                 (1'b1),
@@ -591,37 +619,36 @@ system #(63) system_inst (
     .ROMEN              (ioctl_wr & cart_download),
     .BIOSWEN            (1'b0),
 
-    // Savestates are MiSTer's and are not carried: the Pocket has its own
-    // mechanism through APF. Tied off rather than cut so system.vhd is
-    // unedited; see docs/PLAN.md §9.4.
-    .z80_reg_out        (),
-    .z80_dir            (230'd0),
-    .z80_set            (1'b0),
-    .vdp_regs_out       (),
-    .vdp_regs_in        (128'd0),
-    .vdp_regs_set       (1'b0),
-    .vdp_cram_out       (),
-    .ss_cram_wr         (1'b0),
-    .ss_cram_A          (5'd0),
-    .ss_cram_D          (12'd0),
-    .ss_vram_en         (1'b0),
-    .ss_vram_A          (15'd0),
-    .ss_vram_D          (),
-    .ss_vram_WE         (1'b0),
-    .ss_vram_WA         (15'd0),
-    .ss_vram_WD         (8'd0),
-    .psg_out            (),
-    .psg_in             (56'd0),
-    .psg_set            (1'b0),
-    .mapper_out         (),
-    .mapper_in          (64'd0),
-    .mapper_set         (1'b0),
-    .eeprom_ss_out      (),
-    .eeprom_ss_in       (64'd0),
-    .eeprom_ss_set      (1'b0),
-    .z80_m1_n           (),
-    .z80_mreq_n         (),
-    .z80_iset           (),
+    // Savestates. Everything below is savestates.sv's, wired as SMS.sv
+    // wires it; the System E second VDP and PSG stay tied off.
+    .z80_reg_out        (ss_z80_reg),
+    .z80_dir            (ss_z80_dir),
+    .z80_set            (ss_z80_set),
+    .vdp_regs_out       (ss_vdp_regs),
+    .vdp_regs_in        (ss_vdp_regs_in),
+    .vdp_regs_set       (ss_vdp_regs_set),
+    .vdp_cram_out       (ss_vdp_cram),
+    .ss_cram_wr         (ss_cram_wr),
+    .ss_cram_A          (ss_cram_A),
+    .ss_cram_D          (ss_cram_D),
+    .ss_vram_en         (ss_vram_en),
+    .ss_vram_A          (ss_vram_A),
+    .ss_vram_D          (ss_vram_D),
+    .ss_vram_WE         (ss_vram_WE),
+    .ss_vram_WA         (ss_vram_WA),
+    .ss_vram_WD         (ss_vram_WD),
+    .psg_out            (ss_psg_out),
+    .psg_in             (ss_psg_in),
+    .psg_set            (ss_psg_set),
+    .mapper_out         (ss_mapper_out),
+    .mapper_in          (ss_mapper_in),
+    .mapper_set         (ss_mapper_set),
+    .eeprom_ss_out      (ss_eeprom_out),
+    .eeprom_ss_in       (ss_eeprom_in),
+    .eeprom_ss_set      (ss_eeprom_set),
+    .z80_m1_n           (ss_z80_m1_n),
+    .z80_mreq_n         (ss_z80_mreq_n),
+    .z80_iset           (ss_z80_iset),
     .vdp2_regs_out      (),
     .vdp2_regs_in       (128'd0),
     .vdp2_regs_set      (1'b0),
@@ -638,10 +665,139 @@ system #(63) system_inst (
     .psg2_out           (),
     .psg2_in            (56'd0),
     .psg2_set           (1'b0),
-    .io_state_out       (),
-    .io_state_in        (32'd0),
-    .io_state_set       (1'b0),
-    .ss_freeze          (1'b0)
+    .io_state_out       (ss_io_out),
+    .io_state_in        (ss_io_in),
+    .io_state_set       (ss_io_set),
+    .ss_freeze          (ss_freeze)
+);
+
+// ---------------------------------------------------------------------------
+// Savestates. MiSTer's engine, unedited, in place of SMS.sv's instance of
+// it; savestate_ui.sv is not carried, its two requests come from
+// target/pocket/savestate_apf.sv instead. The DDRAM it writes is that
+// module's block RAM. The game id is SMS.sv's rolling signature of the ROM
+// stream, kept so a state is refused against the wrong ROM.
+// ---------------------------------------------------------------------------
+wire [229:0] ss_z80_reg, ss_z80_dir;
+wire         ss_z80_set, ss_z80_m1_n, ss_z80_mreq_n;
+wire   [1:0] ss_z80_iset;
+wire [127:0] ss_vdp_regs, ss_vdp_regs_in;
+wire         ss_vdp_regs_set;
+wire [383:0] ss_vdp_cram;
+wire   [4:0] ss_cram_A;
+wire  [11:0] ss_cram_D;
+wire         ss_cram_wr;
+wire         ss_vram_en, ss_vram_WE;
+wire  [14:0] ss_vram_A, ss_vram_WA;
+wire   [7:0] ss_vram_D, ss_vram_WD;
+wire  [55:0] ss_psg_out, ss_psg_in;
+wire         ss_psg_set;
+wire  [63:0] ss_mapper_out, ss_mapper_in;
+wire         ss_mapper_set;
+wire  [63:0] ss_eeprom_out, ss_eeprom_in;
+wire         ss_eeprom_set;
+wire  [31:0] ss_io_out, ss_io_in;
+wire         ss_io_set;
+wire  [21:0] ss_video_state_out, ss_video_state_in;
+wire         ss_video_state_set;
+
+assign ss_restored = ss_z80_set;
+
+reg [31:0] ss_game_id = 32'h00000000;
+reg        cart_download_r = 1'b0;
+always @(posedge clk_sys) begin
+    cart_download_r <= cart_download;
+    if (~cart_download_r & cart_download)
+        ss_game_id <= 32'h811C9DC5;
+    else if (ioctl_wr & cart_download)
+        ss_game_id <= {ss_game_id[30:0], ss_game_id[31]} ^ {24'd0, ioctl_dout} ^ {7'd0, ioctl_addr[0], ioctl_addr[8], ioctl_addr[16]};
+end
+
+savestates savestates_inst (
+    .clk             (clk_sys),
+    .reset_n         (~reset_active),
+    .ss_save         (ss_save),
+    .ss_load         (ss_load),
+    .ss_slot         (2'd0),
+    .ss_bios_mode    (1'b0),
+    .ss_game_id      (ss_game_id),
+    .ss_freeze       (ss_freeze),
+    .vblank          (vblank),
+    .x               (x),
+    .z80_reg         (ss_z80_reg),
+    .z80_dir         (ss_z80_dir),
+    .z80_set         (ss_z80_set),
+    .z80_m1_n        (ss_z80_m1_n),
+    .z80_mreq_n      (ss_z80_mreq_n),
+    .z80_iset        (ss_z80_iset),
+    .cpu_ce          (ce_cpu),
+    .vdp_ce          (ce_vdp),
+    .pix_ce          (ce_pix_r),
+    .sp_ce           (ce_sp),
+    .vdp_regs        (ss_vdp_regs),
+    .vdp_regs_in     (ss_vdp_regs_in),
+    .vdp_regs_set    (ss_vdp_regs_set),
+    .cram_out        (ss_vdp_cram),
+    .cram_A          (ss_cram_A),
+    .cram_D          (ss_cram_D),
+    .cram_wr         (ss_cram_wr),
+    .vram_en         (ss_vram_en),
+    .vram_A          (ss_vram_A),
+    .vram_D          (ss_vram_D),
+    .vram_WE         (ss_vram_WE),
+    .vram_WA         (ss_vram_WA),
+    .vram_WD         (ss_vram_WD),
+    .psg_out         (ss_psg_out),
+    .psg_in          (ss_psg_in),
+    .psg_set         (ss_psg_set),
+    .mapper_out      (ss_mapper_out),
+    .mapper_in       (ss_mapper_in),
+    .mapper_set      (ss_mapper_set),
+    .eeprom_out      (ss_eeprom_out),
+    .eeprom_in       (ss_eeprom_in),
+    .eeprom_set      (ss_eeprom_set),
+    .io_out          (ss_io_out),
+    .io_in           (ss_io_in),
+    .io_set          (ss_io_set),
+    .video_state_out (ss_video_state_out),
+    .video_state_in  (ss_video_state_in),
+    .video_state_set (ss_video_state_set),
+    .wram_A          (ss_wram_A),
+    .wram_D          (ram_q),
+    .wram_WE         (ss_wram_WE),
+    .wram_WA         (ss_wram_WA),
+    .wram_WD         (ss_wram_WD),
+    .nvram_A         (ss_nvram_A),
+    .nvram_D         (nvram_q),
+    .nvram_WE        (ss_nvram_WE),
+    .nvram_WA        (ss_nvram_WA),
+    .nvram_WD        (ss_nvram_WD),
+    .systeme         (1'b0),
+    .vdp2_regs       (128'd0),
+    .vdp2_regs_in    (),
+    .vdp2_regs_set   (),
+    .cram2_out       (384'd0),
+    .cram2_A         (),
+    .cram2_D         (),
+    .cram2_wr        (),
+    .vram2_en        (),
+    .vram2_A         (),
+    .vram2_D         (8'd0),
+    .vram2_WE        (),
+    .vram2_WA        (),
+    .vram2_WD        (),
+    .psg2_out        (56'd0),
+    .psg2_in         (),
+    .psg2_set        (),
+    .DDRAM_ADDR      (ss_ddram_addr),
+    .DDRAM_DIN       (ss_ddram_din),
+    .DDRAM_BE        (),
+    .DDRAM_WE        (ss_ddram_we),
+    .DDRAM_DOUT      (ss_ddram_dout),
+    .DDRAM_DOUT_READY(ss_ddram_dout_ready),
+    .DDRAM_RD        (ss_ddram_rd),
+    .DDRAM_BURSTCNT  (),
+    .DDRAM_BUSY      (ss_ddram_busy)
 );
 
 endmodule

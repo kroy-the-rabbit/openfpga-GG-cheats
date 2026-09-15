@@ -8,8 +8,8 @@
 # What upstream's own files.qip lists and this does not:
 #
 #   SMS.sv                  the MiSTer top; gg/gg_core.sv replaces it
-#   savestate_ui.sv         MiSTer savestates, instantiated only by SMS.sv
-#   savestates.sv           the same; see docs/PLAN.md 9.4
+#   savestate_ui.sv         MiSTer's OSD glue for savestates.sv; the Pocket's
+#                           requests come from target/pocket/savestate_apf.sv
 #   keyboard.sv             SK-1100, SC-3000 only, instantiated only by SMS.sv
 #   lightgun.sv             gated off in Game Gear mode, only in SMS.sv
 #   compressor.sv           its instantiation in SMS.sv is commented out
@@ -32,6 +32,7 @@ set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "
 set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "upstream/parts.v"]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "upstream/sdram.sv"]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "upstream/cheatcodes.sv"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "upstream/savestates.sv"]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "gg/cheat_poker.sv"]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "gg/cheat_binloader.sv"]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "gg/cheat_loader.sv"]
