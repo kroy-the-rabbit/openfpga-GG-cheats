@@ -16,13 +16,13 @@ cheat engine.
 ## Status
 
 Release `v0.9999.20260913` packages build `edc23d4`. Tested source is
-`d7dfbb8` with this tree's packaging: it boots the EEPROM titles that hang
-on `edc23d4`, adds save states and sleep, and runs Master System titles at
-their own resolutions. Game Gear and Master System ROMs, video, audio,
-controls, both kinds of save, save states, sleep, both cheat mechanisms and
-the named overlay are confirmed on hardware. SG-1000 boots Flicky, The
-Castle and Zaxxon. The build uses 10,064 ALMs (54.5 %) and passes every
-timing category.
+`21b980f`: it boots the EEPROM titles that hang on `edc23d4`, adds save
+states, sleep and FM sound, and runs Master System titles at their own
+resolutions. Game Gear and Master System ROMs, video, audio, controls, both
+kinds of save, save states, sleep, FM sound, both cheat mechanisms and the
+named overlay are confirmed on hardware. SG-1000 boots Flicky, The Castle
+and Zaxxon. The build uses 11,285 ALMs (61.1 %) and passes every timing
+category.
 
 | Feature | Status |
 |---|---|
@@ -35,7 +35,7 @@ timing category.
 | Save states and sleep | Menu save and load, sleep and wake, tested on Pocket; MiSTer's engine behind APF |
 | Master System at 192, 224 and 240 lines | 192 tested (Phantasy Star, Ys); 224 and 240 untested |
 | SG-1000 | Flicky, The Castle and Zaxxon boot; The Castle's 32 KB cart RAM is written back, reload untested |
-| FM sound (YM2413) | OutRun switches between FM and PSG on the Pocket |
+| FM sound (YM2413) | OutRun switches between FM and PSG on the Pocket; output averaged per 48 kHz frame |
 | Physical cartridge adapter | Not implemented |
 
 Merge a release package's `Assets`, `Cores` and `Platforms` into the SD
