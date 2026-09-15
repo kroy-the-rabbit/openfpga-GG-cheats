@@ -582,10 +582,13 @@ system #(63) system_inst (
     .key_a              (),
     .key_d              (8'h00),
 
+    // The load stream feeds upstream's ROM scan: CRC32 for the EEPROM and
+    // Janggun lists, plus the static Codemasters and Zemina detections.
+    // ioctl_wr is one clk_sys cycle per byte, as MiSTer's is.
     .ROMCL              (clk_sys),
-    .ROMAD              (25'd0),
-    .ROMDT              (8'h00),
-    .ROMEN              (1'b0),
+    .ROMAD              (ioctl_addr),
+    .ROMDT              (ioctl_dout),
+    .ROMEN              (ioctl_wr & cart_download),
     .BIOSWEN            (1'b0),
 
     // Savestates are MiSTer's and are not carried: the Pocket has its own
