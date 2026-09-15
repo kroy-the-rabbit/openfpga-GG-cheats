@@ -46,10 +46,12 @@ module tb;
     if (bus_done && bus_rejected) rejected = rejected + 1;
   end
 
+  // A cartridge of `bytes` in a 512 KB address space: the model mirrors
+  // through the unused bank bits the way the chip select does.
   task load(input integer bytes, input [3:0] code, input integer with_header);
     integer k;
     begin
-      for (k = 0; k < ROM_BYTES; k = k + 1) cart.rom[k] = (k * 7 + (k >> 9) + bytes) & 8'hFF;
+      for (k = 0; k < ROM_BYTES; k = k + 1) cart.rom[k] = ((k % bytes) * 7 + ((k % bytes) >> 9) + bytes) & 8'hFF;
       if (with_header) begin
         cart.rom[16'h7FF0] = "T"; cart.rom[16'h7FF1] = "M"; cart.rom[16'h7FF2] = "R"; cart.rom[16'h7FF3] = " ";
         cart.rom[16'h7FF4] = "S"; cart.rom[16'h7FF5] = "E"; cart.rom[16'h7FF6] = "G"; cart.rom[16'h7FF7] = "A";
@@ -67,6 +69,7 @@ module tb;
       if (count != bytes) begin $display("FAIL size %0d: emitted %0d bytes", bytes, count); fails = fails + 1; end
       if (size_bytes != bytes) begin $display("FAIL size_bytes %0d want %0d", size_bytes, bytes); fails = fails + 1; end
       if (header_ok != want_ok) begin $display("FAIL header_ok %0d want %0d", header_ok, want_ok); fails = fails + 1; end
+      if (want_ok && size_code != code) begin $display("FAIL size_code %0h want %0h", size_code, code); fails = fails + 1; end
       for (i = 0; i < bytes; i = i + 1)
         if (got[i] !== cart.rom[i % ROM_BYTES]) begin
           if (fails < 8) $display("FAIL byte %0h: got %02x want %02x", i, got[i], cart.rom[i]);
@@ -79,11 +82,11 @@ module tb;
 
   initial begin
     #1;
-    load(524288, 4'h1, 1); run(524288, 4'h1, 1, 1);
-    load(131072, 4'hF, 1); run(131072, 4'hF, 1, 1);
     load(32768,  4'hC, 1); run(32768,  4'hC, 1, 1);
     load(65536,  4'hE, 1); run(65536,  4'hE, 1, 1);
-    load(524288, 4'h0, 0); run(524288, 4'h1, 0, 0);   // no header: 512 KB, code 1
+    load(131072, 4'hF, 1); run(131072, 4'hF, 1, 1);
+    load(262144, 4'h0, 1); run(262144, 4'h0, 1, 1);
+    load(262144, 4'h0, 0); run(262144, 4'h0, 0, 0);   // no header: size still found
     if (cart.save_write_count != 0 || cart.eeprom_enable_count != 0) begin
       $display("FAIL: cartridge saw a data-window write or an EEPROM enable"); fails = fails + 1; end
     $display(fails == 0 ? "PASS" : "FAIL");

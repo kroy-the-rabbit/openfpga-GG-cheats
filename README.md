@@ -36,7 +36,7 @@ category.
 | Master System at 192, 224 and 240 lines | 192 tested (Phantasy Star, Ys); 224 and 240 untested |
 | SG-1000 | Flicky, The Castle and Zaxxon boot; The Castle's 32 KB cart RAM is written back, reload untested |
 | FM sound (YM2413) | OutRun switches between FM and PSG on the Pocket; output averaged per 48 kHz frame |
-| Game Gear cartridges through Analogue's adapter | Read into SDRAM at boot, then run as an SD image; untested |
+| Game Gear cartridges through Analogue's adapter | Sonic 2 and Arch Rivals play from the cartridge, cheats included; World Series Baseball (Rev A) read byte-perfect |
 
 Merge a release package's `Assets`, `Cores` and `Platforms` into the SD
 root; the three packages are independent, so install only the platforms you
@@ -48,7 +48,7 @@ core menu. The cheat and overlay switches start off and are not persisted.
 **Play Cartridge** in the Game Gear entry, with Analogue's Game Gear
 adapter fitted, reads the cartridge through the adapter and then runs it as
 if it had come from the card: the cartridge's own mapper is used only to get
-the bytes out, always all 512 KB the mapper can address, about a second. Cart RAM and EEPROM saves
+the bytes out, up to the 512 KB the mapper can address, about a second. Cart RAM and EEPROM saves
 go to the Pocket's save file for the cartridge slot, not back to the
 cartridge. `CG:`, `CS:` and `CR:` in the menu are the adapter report, the read
 state and the CRC32 of what was read, for when nothing appears.
