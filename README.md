@@ -36,7 +36,7 @@ category.
 | Master System at 192, 224 and 240 lines | 192 tested (Phantasy Star, Ys); 224 and 240 untested |
 | SG-1000 | Flicky, The Castle and Zaxxon boot; The Castle's 32 KB cart RAM is written back, reload untested |
 | FM sound (YM2413) | OutRun switches between FM and PSG on the Pocket; output averaged per 48 kHz frame |
-| Game Gear cartridges through Analogue's adapter | Sonic 2 and Arch Rivals play from the cartridge, cheats included; World Series Baseball (Rev A) read byte-perfect |
+| Game Gear cartridges through Analogue's adapter | Sonic 2, Arch Rivals and World Series Baseball (an EEPROM cart) play from the cartridge, cheats included |
 
 Merge a release package's `Assets`, `Cores` and `Platforms` into the SD
 root; the three packages are independent, so install only the platforms you
