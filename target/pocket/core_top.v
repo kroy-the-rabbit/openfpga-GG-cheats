@@ -407,6 +407,7 @@ module core_top (
         32'hF0000218: settings_rd_data <= {20'd0, osd_codes_74, osd_titles_74};
         32'hF0000220: settings_rd_data <= cart_report_74;
         32'hF0000224: settings_rd_data <= cart_diag_74;
+        32'hF0000228: settings_rd_data <= cart_crc_74;
         default: settings_rd_data <= 32'd0;
       endcase
     end
@@ -647,8 +648,9 @@ module core_top (
   wire rom_overrun;
   wire rom_overrun_74;
   synch_3 s_ovr (rom_overrun, rom_overrun_74, clk_74a);
-  wire [31:0] cart_diag_74;
+  wire [31:0] cart_diag_74, cart_crc_74;
   synch_3 #(32) s_cdiag (cart_diag, cart_diag_74, clk_74a);
+  synch_3 #(32) s_ccrc (cb_crc32, cart_crc_74, clk_74a);
 
   wire [5:0] cheat_count, cheat_decl;
   wire [19:0] cheat_bytes;
@@ -756,7 +758,7 @@ module core_top (
   wire [24:0] cb_addr;
   wire [7:0]  cb_data;
   wire [3:0]  cb_size_code, cb_state;
-  wire [31:0] cb_size_bytes;
+  wire [31:0] cb_size_bytes, cb_crc32;
   wire [24:0] sel_addr = gg_wr ? gg_addr : sms_wr ? sms_addr : sg_wr ? sg_addr : cb_addr;
   reg  [24:0] held_addr = 0;
   always @(posedge clk_sys) if (gg_wr | sms_wr | sg_wr | cb_wr) held_addr <= sel_addr;
@@ -909,6 +911,7 @@ module core_top (
       .header_ok (cb_header_ok),
       .size_code (cb_size_code),
       .size_bytes(cb_size_bytes),
+      .crc32     (cb_crc32),
       .state     (cb_state)
   );
 
@@ -918,7 +921,7 @@ module core_top (
 
   // For the menu readouts: the report word, and the boot state with the
   // header verdict and size code.
-  wire [31:0] cart_diag = {cb_state, 3'd0, cb_header_ok, cb_size_code, 3'd0, cb_busy, 3'd0, cb_done,
+  wire [31:0] cart_diag = {4'd0, cb_state, 3'd0, cb_header_ok, cb_size_code, 3'd0, cb_busy, 3'd0, cb_done,
                            1'b0, cart_start, cart_started, cart_session, 3'd0, cart_pins_ready};
 
   // ==========================================================================
