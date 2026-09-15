@@ -13,16 +13,18 @@ cheat engine.
 
 ## Status
 
-Release `v0.9999.20260913` packages tested build `edc23d4`. ROMs, video,
-audio, controls, saves,
-both cheat mechanisms and the named overlay are confirmed on hardware.
-The build uses 7,291 ALMs (39.5 %) and passes every timing category.
+Release `v0.9999.20260913` packages build `edc23d4`. Tested source is
+`96ac103`, which also boots the EEPROM titles that hang on `edc23d4`. ROMs,
+video, audio, controls, both kinds of save, both cheat mechanisms and the
+named overlay are confirmed on hardware. The build uses 7,687 ALMs (41.6 %)
+and passes every timing category.
 
 | Feature | Status |
 |---|---|
 | Upstream vendored at `1fc3c121` | Verified by `make test` |
 | SD ROMs, video, audio and controls | Tested on Pocket |
 | Battery saves | Eternal Legend saved and loaded after a power cycle |
+| 93C46 EEPROM saves | World Series Baseball '95 saved and loaded after a power cycle |
 | Game Genie ROM patches and Pro Action Replay RAM writes | Tested on Pocket |
 | `.cht`, `.chtbin` and named overlay | Tested, including switching cheat files |
 | Physical cartridge adapter, sleep and savestates | Not implemented |
