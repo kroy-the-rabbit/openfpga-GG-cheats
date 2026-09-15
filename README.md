@@ -16,13 +16,13 @@ cheat engine.
 ## Status
 
 Release `v0.9999.20260913` packages build `edc23d4`. Tested source is
-`21b980f`: it boots the EEPROM titles that hang on `edc23d4`, adds save
-states, sleep and FM sound, and runs Master System titles at their own
-resolutions. Game Gear and Master System ROMs, video, audio, controls, both
-kinds of save, save states, sleep, FM sound, both cheat mechanisms and the
-named overlay are confirmed on hardware. SG-1000 boots Flicky, The Castle
-and Zaxxon. The build uses 11,285 ALMs (61.1 %) and passes every timing
-category.
+`440ccc6`: it boots the EEPROM titles that hang on `edc23d4`, adds save
+states, sleep, FM sound and cartridge play, and runs Master System titles at
+their own resolutions. Game Gear and Master System ROMs, video, audio,
+controls, both kinds of save, save states, sleep, FM sound, both cheat
+mechanisms, the named overlay and Game Gear cartridges are confirmed on
+hardware. SG-1000 boots Flicky, The Castle and Zaxxon. The build uses
+11,642 ALMs (63.0 %) and passes every timing category.
 
 | Feature | Status |
 |---|---|
