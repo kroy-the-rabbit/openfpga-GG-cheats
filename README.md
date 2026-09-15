@@ -20,9 +20,9 @@ Release `v0.9999.20260913` packages build `edc23d4`. Tested source is
 on `edc23d4`, adds save states and sleep, and runs Master System titles at
 their own resolutions. Game Gear and Master System ROMs, video, audio,
 controls, both kinds of save, save states, sleep, both cheat mechanisms and
-the named overlay are confirmed on hardware. SG-1000 shares the path and is
-untested for want of a ROM. The build uses 10,064 ALMs (54.5 %) and passes
-every timing category.
+the named overlay are confirmed on hardware. SG-1000 boots Flicky, The
+Castle and Zaxxon. The build uses 10,064 ALMs (54.5 %) and passes every
+timing category.
 
 | Feature | Status |
 |---|---|
@@ -34,7 +34,7 @@ every timing category.
 | `.cht`, `.chtbin` and named overlay | Tested, including switching cheat files |
 | Save states and sleep | Menu save and load, sleep and wake, tested on Pocket; MiSTer's engine behind APF |
 | Master System at 192, 224 and 240 lines | 192 tested (Phantasy Star, Ys); 224 and 240 untested |
-| SG-1000 | Packaged, untested |
+| SG-1000 | Flicky, The Castle and Zaxxon boot; The Castle's 32 KB cart RAM is written back, reload untested |
 | Physical cartridge adapter | Not implemented |
 
 Merge a release package's `Assets`, `Cores` and `Platforms` into the SD
