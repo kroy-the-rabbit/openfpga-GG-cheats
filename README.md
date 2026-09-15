@@ -35,7 +35,7 @@ timing category.
 | Save states and sleep | Menu save and load, sleep and wake, tested on Pocket; MiSTer's engine behind APF |
 | Master System at 192, 224 and 240 lines | 192 tested (Phantasy Star, Ys); 224 and 240 untested |
 | SG-1000 | Flicky, The Castle and Zaxxon boot; The Castle's 32 KB cart RAM is written back, reload untested |
-| FM sound (YM2413) | Wired, menu switch on by default, untested |
+| FM sound (YM2413) | OutRun switches between FM and PSG on the Pocket |
 | Physical cartridge adapter | Not implemented |
 
 Merge a release package's `Assets`, `Cores` and `Platforms` into the SD
@@ -45,9 +45,10 @@ and `.sg` in `Assets/sg1000/common/`. No BIOS is needed. Put `Game.gg.cht`
 beside `Game.gg`, select the cheats in the file and turn on **Cheats** in the
 core menu. The cheat and overlay switches start off and are not persisted.
 `.chtbin` also works, without names. The shared table holds 32 codes.
-**FM sound** in the core menu is the YM2413 and starts on; a game only plays
-it if it asks for the chip through port $F2, and some export titles ask only
-with **Region** set to Japan.
+**FM sound** in the core menu is the YM2413 and starts on. A game asks for
+the chip through port $F2 when it boots, so the switch takes effect at the
+next **Reset core**, and some export titles ask only with **Region** set to
+Japan.
 
 See [docs/PROVENANCE.md](docs/PROVENANCE.md) for source attribution,
 including the platform image and the core icon.
