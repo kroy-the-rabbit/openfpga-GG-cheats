@@ -48,7 +48,7 @@ rather than a technical one; nothing here is built for them yet.
 |---|---|
 | [docs/PLAN.md](docs/PLAN.md) | engineering history (private) |
 | [docs/PROVENANCE.md](docs/PROVENANCE.md) | where `rtl/upstream/` comes from and the rule that it is never edited |
-| [docs/HANDOFF.md](docs/HANDOFF.md) | where the work stands |
+| [docs/HANDOFF.md](docs/HANDOFF.md) | where the work stands (private) |
 | [docs/BASELINE.md](docs/BASELINE.md) | current tested build measurements |
 
 ## Build
@@ -58,12 +58,10 @@ rather than a technical one; nothing here is built for them yet.
     make dist      package a flashable core -> build/gg/dist/
     make report    re-read an existing build's utilisation and slack
 
-Quartus runs only on the controlled builders through the orchestrator's
-`runner-build`, against a private Quartus Lite image. Quartus Lite needs no
-licence, but that grants no right to redistribute its installed files, so the
-image is never published; each repo documents building it from Intel's own
-installers. Releases publish the built package and its checksums, and CI
-verifies that package against the tag rather than building anything.
+Releases are built from the tagged commit on a controlled builder with Quartus
+Prime Lite 25.1std. No Quartus runs on GitHub; the release workflow only checks
+the published package. To rebuild a release yourself, see
+[tools/podman/README.md](tools/podman/README.md#reproducing-a-release).
 
 ## Licence
 

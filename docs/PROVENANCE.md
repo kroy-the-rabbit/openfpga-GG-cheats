@@ -42,11 +42,10 @@ upstream ships. It runs in Master System mode only.
 
 ## From the sibling cores, not from upstream
 
-`rtl/upstream/` is MiSTer's. These came from the other Pocket cores in
-`pocket-dev` instead, and the licence line in each is theirs, GPL-3.0-or-later,
-not this repository's GPLv2. Upstream's "or later" permits that; it also means
-the combined work is GPL-3, which settles `PLAN.md` §9.2 by import rather than
-by decision.
+`rtl/upstream/` is MiSTer's. These came from the sibling Pocket cores
+instead, and the licence line in each is theirs, GPL-3.0-or-later, not this
+repository's GPLv2. Upstream's "or later" permits that; it also means the
+combined work is GPL-3.
 
 | file | from | changed |
 |---|---|---|
@@ -55,6 +54,9 @@ by decision.
 | `rtl/gg/cheat_poker.sv` | `pocket-pcengine` | comments, and the work RAM it writes into. Logic unchanged |
 | `rtl/gg/cheat_osd.sv` | `pocket-gbc`, not `pocket-pcengine` | comments; the pipeline collapsed from three delay stages to two, matching `cheat_titles`' true one-cycle read latency instead of the two the sibling comment assumed |
 | `tools/cheats/genfont.py` | `pocket-gbc` | the output path, `src/gb/` to `rtl/gg/` |
+| `tools/podman/Containerfile` | `pocket-gbc` | the header's project name |
+| `tools/podman/fetch-installers.sh` | `pocket-gbc` | nothing |
+| `tools/podman/compare.sh` | `pocket-pcengine` | the default revision, `gg_pocket` |
 
 `rtl/gg/cheat_binloader.sv` is this project's, but its shape is
 `pocket-gba`'s: the magic interlock, the byte counter, the shift register and

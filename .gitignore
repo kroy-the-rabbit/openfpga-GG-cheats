@@ -4,3 +4,6 @@ external/
 
 # Python bytecode from tools/cheats
 __pycache__/
+
+# Quartus installers, fetched by make installers
+/tools/podman/dl/

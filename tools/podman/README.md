@@ -2,16 +2,36 @@
 
 The Pocket's FPGA is a Cyclone V `5CEBA4F23C8`, and this project is an
 OpenGateware-style tree: the Quartus project lives in `projects/`, sources come
-in through `projects/gg_pocket.qip` and `rtl/pce.qip`, and the board pinout,
+in through `projects/gg_pocket.qip` and `rtl/gg.qip`, and the board pinout,
 the pre/post-flow scripts and `target/pocket/core.qip` are pulled in by
 `platform/pocket/pocket.tcl`.
 
-Nothing here is installed on the host. Quartus runs in a container image; the
-one this harness defaults to is `localhost/pocket-quartus:25.1std`, built for
-the sibling Pocket projects on this machine.
+Nothing here is installed on the host. Quartus runs in a container image,
+`localhost/pocket-quartus:25.1std` by default. Release builds run on controlled
+builders; no Quartus runs on GitHub.
+
+## Reproducing a release
+
+You download Quartus Lite from Altera and accept Altera's terms yourself;
+installers are fetched only with `ACCEPT_ALTERA_EULA=1` set.
+
+```sh
+git checkout v0.9999.YYYYMMDD
+ACCEPT_ALTERA_EULA=1 make installers   # 3.4 GB into tools/podman/dl/, once
+make image                             # Quartus installed into a local image, once
+make gg STRICT_TIMING=1
+RELEASE_NAME=v0.9999.YYYYMMDD make dist
+```
+
+Compare `build/gg/report.txt` with the release's `report.txt`, and the
+release's `BUILD.json` for the source commit it was built from. The bitstream
+hash can differ from the release even on the same source: build-ID timestamps
+and placement on another machine change it.
+
+## Commands
 
     make gg                 build and report
-    make gg NO_SIGNALTAP=1  build with the qsf's SignalTap instrumentation removed
+    make gg NO_SIGNALTAP=1  strip SignalTap assignments added for a hardware probe
     make gg SEED=2          another fitter placement seed
     make gg SKIP_COMPILE=1  re-report existing outputs
     make report              regenerate build/gg/report.txt
@@ -23,8 +43,7 @@ the sibling Pocket projects on this machine.
 The checked-in tree is never written to. `build.sh` rsyncs the repo to
 `build/gg/work/` and Quartus compiles there, which is also what makes it safe
 to change fitter settings for an experiment: `projects/gg_pocket.qsf` in the
-repo stays exactly as upstream has it, and the patched copy is the one that
-gets compiled. Quartus scratch (`db/`, `incremental_db/`, `output_files/`)
+repo stays as checked in, and the patched copy is the one that gets compiled. Quartus scratch (`db/`, `incremental_db/`, `output_files/`)
 survives an rsync so incremental compiles work; `make clean` wipes all of it.
 
 Outputs:
@@ -47,14 +66,10 @@ failure; `STRICT_TIMING=1` makes negative slack exit non-zero for builds that
 are actually meant to be flashed. Either way a `build/gg/TIMING_FAILED` marker
 is left behind when slack goes negative.
 
-## Two things upstream's qsf does that affect the numbers
+## Project settings that affect the numbers
 
 * `NUM_PARALLEL_PROCESSORS 6` is pinned in the qsf. The build copy gets `ALL`,
   or `NPROC=<n>` when two experiments are sharing the machine. This changes
   compile time only.
-* `ENABLE_SIGNALTAP ON` with `USE_SIGNALTAP_FILE stp1.stp`. There is no
-  `stp1.stp` next to the project; the only one in the tree is
-  `target/pocket/stp1.stp`, a leftover from another core (it names
-  `ap_core.sof` and its signal sets are SNES SDRAM loading). `NO_SIGNALTAP=1`
-  takes the assignments out so the utilisation number is unambiguously the
-  core's own.
+* SignalTap is off and no `.stp` is checked in. `NO_SIGNALTAP=1` strips the
+  assignments again if one is added temporarily to probe hardware.

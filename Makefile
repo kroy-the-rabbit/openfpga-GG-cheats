@@ -3,9 +3,11 @@
 #
 # Quartus, containerised (see tools/podman/README.md):
 #
+#   ACCEPT_ALTERA_EULA=1 make installers   Quartus Lite installers -> tools/podman/dl/
+#   make image                  install them into the local Quartus image
 #   make gg                    build -> build/gg/{report.txt,build.log,work/}
 #   make gg BUILD_NAME=foo     build into build/foo/ instead (compare two trees)
-#   make gg NO_SIGNALTAP=1     build without the qsf's SignalTap instrumentation
+#   make gg NO_SIGNALTAP=1     strip SignalTap assignments added for a hardware probe
 #   make gg SEED=2             re-run the fitter with a different placement seed
 #   make gg SKIP_COMPILE=1     re-report existing outputs (no Quartus run)
 #   make dist                   package a flashable core -> build/gg/dist/
@@ -18,8 +20,8 @@
 #   make flash                  merge build/gg/dist onto the mounted Pocket card
 #   make clean                  remove build/
 #
-# Builds run on the runners through the orchestrator's runner-build, never
-# here (engineering HANDOFF.md, "Runners"). CI never builds: .github/workflows/release.yml verifies the published package.
+# Release builds run on controlled builders. CI builds nothing:
+# .github/workflows/release.yml verifies the published package.
 #
 #   make test                   provenance, project file paths, APF manifests
 
@@ -27,15 +29,23 @@ PODMAN  ?= podman
 # Repeatable timing closure. AUTO FIT lowers effort as soon as it believes
 # timing is achievable, which on the sibling cores moved the answer by 0.4 ns
 # and spread 0.5 ns across seeds for no reason the design could explain, while
-# STANDARD FIT agreed to a picosecond. Nothing here has been measured yet; the
-# qsf asks for STANDARD FIT too, so this only matters if it is overridden.
-# See docs/BASELINE.md.
+# STANDARD FIT agreed to a picosecond. The qsf asks for STANDARD FIT too, so
+# this only matters if it is overridden.
 FITTER_EFFORT ?= STANDARD FIT
 IMAGE   ?= localhost/pocket-quartus:25.1std
 REV     ?= gg_pocket
 HARNESS := tools/podman
+DL      := $(HARNESS)/dl
 
-.PHONY: gg dist report compare shell clean test flash
+.PHONY: installers image gg dist report compare shell clean test flash
+
+installers:
+	$(HARNESS)/fetch-installers.sh
+
+image: installers
+	$(PODMAN) build --security-opt label=disable \
+		-v "$(CURDIR)/$(DL):/dl:ro" \
+		-t $(IMAGE) -f $(HARNESS)/Containerfile $(HARNESS)
 
 gg:
 	PODMAN=$(PODMAN) IMAGE=$(IMAGE) REV=$(REV) SEED=$(SEED) BUILD_NAME=$(BUILD_NAME) \
