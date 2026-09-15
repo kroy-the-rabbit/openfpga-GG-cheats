@@ -62,11 +62,8 @@ cp -r "$ROOT/pkg/." "$OUT/"
 # business on an SD card or in a release archive.
 find "$OUT" -name .gitkeep -delete
 
-# One bitstream, one package per platform. The Pocket only delivers a ROM
-# slot before the core starts when the slot is required, and a package can
-# carry only one required ROM slot, so each platform gets its own Cores/
-# directory around the same bitstream, as drizzt's openfpga-SMS does. The
-# bit-reversed image is made once and copied.
+# One bitstream, one package per platform, as drizzt's openfpga-SMS does.
+# The bit-reversed image is made once and copied.
 #
 # unpack 'b*' reads each byte LSB-first, pack 'B*' writes it MSB-first, so the
 # round trip is exactly a per-byte bit reversal. Byte order is unchanged.

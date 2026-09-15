@@ -17,12 +17,9 @@ fail() { echo "FAIL: $*" >&2; rc=1; }
 command -v jq >/dev/null || { echo "jq is required" >&2; exit 1; }
 
 # ---- one package per platform, one bitstream between them ------------------
-# The Pocket only delivers a ROM slot before the core starts when the slot is
-# required, and a package can hold only one required ROM slot (a second one
-# spawns a file browser at every launch). Three ROM slots in one package put
-# every platform on a white screen on 2026-09-15. So each platform gets its
-# own Cores/ directory around the same bitstream, and these rules keep the
-# three packages interchangeable copies of one core.
+# APF delivers a ROM slot before start only when it is required, and a
+# package can hold one required ROM slot, so each platform has its own
+# Cores/ directory around the same bitstream.
 CORE_DIRS=(pkg/Cores/*/)
 [[ ${#CORE_DIRS[@]} -ge 1 ]] || fail "no core under pkg/Cores"
 bits=$(for d in "${CORE_DIRS[@]}"; do jq -r '.core.cores[0].filename' "$d/core.json"; done | sort -u)
@@ -107,10 +104,8 @@ check_core() {
     dupe=$(jq -r '.data.data_slots[] | select(.address != null) | .address[0:4]' "$DATA_JSON" | sort | uniq -d)
     [[ -z "$dupe" ]] || fail "$CORE_NAME: two data slots share an address prefix: $dupe"
 
-    # The ROM is slot index 0 and the only required slot: APF delivers a slot
-    # before start only when it is required, the Save slot's parameters clone
-    # the filename of slot 0, and core_top.v writes the datatable size at
-    # index 1, which has to be the Save slot.
+    # ROM at index 0, the only required slot; Save at index 1, where
+    # core_top.v writes the datatable size and whose filename clones slot 0.
     jq -e '.data.data_slots[0].required == true' "$DATA_JSON" >/dev/null \
       || fail "$CORE_NAME: data slot 0 (the ROM) is not required, so APF starts the core without it"
     local nreq

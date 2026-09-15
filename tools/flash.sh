@@ -36,10 +36,7 @@ SD="${1:-$(findmnt -rn -o TARGET | grep -E "^/run/media/$USER/" | head -1 || tru
 # A zip newer than the dist tree replaces it. The first P1 flash did not do
 # this: a dist tree left over from P0 sat beside the freshly fetched P1 zip,
 # the zip was never opened, and the card got P0 again while every doc said P1.
-#
-# dist.sh writes one zip per platform package around the same bitstream, so
-# several zips are the normal case; they must all carry one version, or one
-# of them is a leftover from another build.
+# dist.sh writes one zip per platform package; all must carry one version.
 shopt -s nullglob
 zips=("$REPO/build/$NAME"/*.zip)
 shopt -u nullglob
@@ -61,11 +58,8 @@ fi
   echo "Build on a runner and fetch it, or run 'make dist BUILD_NAME=$NAME'." >&2
   exit 1; }
 
-# The marker is what report.sh leaves beside a local build. A build fetched
-# from a runner brings report.txt and nothing else, so the report's own
-# worst-slack table is read as well: one negative number in it is a miss.
-# The 0x00B1 cartridge build of 2026-09-15 reached the card with hold at
-# -0.020 ns because only the marker was checked.
+# report.sh's marker stays on the runner; a fetched build has only
+# report.txt, so its worst-slack table is read too.
 timing_miss=""
 [[ -f "$REPO/build/$NAME/TIMING_FAILED" ]] && timing_miss="marker"
 if [[ -f "$REPO/build/$NAME/report.txt" ]]; then

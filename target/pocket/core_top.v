@@ -242,8 +242,7 @@ module core_top (
   // bridge endianness
   assign bridge_endian_little    = 0;
 
-  // The cartridge connector belongs to cart_pins, below, which holds every
-  // pin at the safe idle until a Game Gear adapter session is admitted.
+  // The cartridge connector is cart_pins's, below.
 
   // link port is input only
   assign port_tran_so            = 1'bz;
@@ -346,8 +345,7 @@ module core_top (
   // not offer a switch that does nothing. The address is claimed here so the
   // one it eventually gets is the one this already answers.
   reg cheats_osd = 0;
-  // YM2413. On by default as on MiSTer; a game still has to ask for it
-  // through port $F2, and Game Gear and SG-1000 titles never do.
+  // YM2413, on by default as on MiSTer; a game still asks through port $F2.
   reg fm_en = 1;
 
   reg [31:0] settings_rd_data = 0;
@@ -752,8 +750,7 @@ module core_top (
   // gg_core looks at ioctl_addr once more after the stream ends, to tell a
   // headered dump from a plain one, so the merged address holds the last
   // strobed value rather than falling back to an idle loader's.
-  // The fourth source is the cartridge slot itself, gg_cart_boot below: same
-  // shape, same stream, and it can only run when no slot is loading.
+  // The fourth source is the cartridge, gg_cart_boot below.
   wire        cb_wr, cb_busy, cb_done, cb_header_ok, cart_pins_ready;
   wire [24:0] cb_addr;
   wire [7:0]  cb_data;
@@ -768,19 +765,12 @@ module core_top (
   assign ioctl_dout = gg_wr ? gg_dout : sms_wr ? sms_dout : sg_wr ? sg_dout : cb_data;
 
   // ==========================================================================
-  // Cartridge
-  //
-  // One bitstream, so every package carries this; only kroy.GG's core.json
-  // turns the slot on (cartridge_adapter bit 24, Play Cartridge). The Pocket
-  // reports the adapter over the bridge (0x00B1); a session is admitted when
-  // that says Play Cartridge, power on and the Game Gear adapter's ID, and
-  // the host has left reset. cart_pins then owns the connector, gg_cart_bus
-  // runs the memory cycles, and gg_cart_boot reads the image into the ROM
-  // stream. The machine is held in reset from the moment Play Cartridge is
-  // selected until the last byte is in, so it never runs an empty ROM.
-  //
-  // The first read waits two and a half seconds after admission, which is
-  // the settling time pocket-cartridge found the slot supply needs.
+  // Cartridge. Only kroy.GG's core.json turns the slot on (bit 24, Play
+  // Cartridge). Session: report 0x00B1 says Play Cartridge, power on and the
+  // Game Gear adapter ID, and the host has left reset. cart_pins owns the
+  // connector, gg_cart_bus the cycles, gg_cart_boot reads the image into the
+  // ROM stream. Reset held from Play Cartridge until the last byte. First
+  // read 2.5 s after admission (pocket-cartridge's slot supply settling).
   // ==========================================================================
   localparam [7:0] GG_ADAPTER_ID = 8'h01;
 
@@ -859,8 +849,7 @@ module core_top (
   wire [15:0] cb_bus_addr;
   wire [7:0]  cb_bus_wdata, cb_bus_rdata;
 
-  // 27 / 54 / 27 clk_sys cycles: 0.5 us setup, 1 us strobe, 0.5 us recovery,
-  // the same bring-up profile pocket-cartridge reads headers with.
+  // 0.5 us setup, 1 us strobe, 0.5 us recovery: pocket-cartridge's profile.
   gg_cart_bus #(
       .ADDR_SETUP_CYCLES(27),
       .STROBE_CYCLES    (54),
@@ -915,12 +904,10 @@ module core_top (
       .state     (cb_state)
   );
 
-  // Held in reset from Play Cartridge until the image is in. A wrong or
-  // missing adapter keeps it there, with the CG: readout saying why.
+  // A wrong or missing adapter keeps the reset held; CG: says why.
   assign cart_hold = cart_play_s && !cb_done;
 
-  // For the menu readouts: the report word, and the boot state with the
-  // header verdict and size code.
+  // CS: readout.
   wire [31:0] cart_diag = {4'd0, cb_state, 3'd0, cb_header_ok, cb_size_code, 3'd0, cb_busy, 3'd0, cb_done,
                            1'b0, cart_start, cart_started, cart_session, 3'd0, cart_pins_ready};
 
@@ -1451,10 +1438,7 @@ module core_top (
   // ==========================================================================
   // Audio
   //
-  // The mixer output is a continuously updated signed level, not a stream of
-  // samples: sound_i2s takes whatever it finds when its 48 kHz frame comes
-  // round. audio_frame_avg averages each frame first, for the YM2413's sake
-  // (see the file).
+  // audio_frame_avg averages each 48 kHz frame before sound_i2s samples it.
   // ==========================================================================
   wire signed [15:0] audio_avg_l, audio_avg_r;
 

@@ -2,38 +2,18 @@
 `default_nettype none
 
 // Read a Game Gear cartridge through the official adapter into the ROM
-// stream, once, at boot. The core then runs it exactly as it runs an SD
-// image: the cartridge's own mapper is used only to get the bytes out, and
-// system.vhd's mapper, EEPROM and RAM emulation take over from there. That
-// keeps the Z80 off the connector, where a 3.58 MHz memory cycle through two
-// level translators and an adapter would be its own project.
-//
-// Sequence, all through gg_cart_bus and its write whitelist:
-//   1. Sega mapper to its reset state: FFFC=00 (RAM and EEPROM off), FFFD=00,
-//      FFFE=01, FFFF=02.
-//   2. The 16-byte header at 7FF0, then 3FF0, then 1FF0, until one starts
-//      with "TMR SEGA". Its last byte's low nibble is the size code.
-//   3. 0000..7FFF read straight, which is banks 0 and 1 on every cartridge,
-//      mapper or not, and is emitted. The CRC32 of bank 0 is kept.
-//   4. Banks 2, 4, 8 and 16 read through slot 2 (FFFF=bank, 8000..BFFF),
-//      not emitted, each compared by CRC32 with bank 0. The first match is
-//      the mirror: a cartridge with fewer bank bits repeats from there, and
-//      a cartridge with no mapper at all repeats bank 0 at bank 2. No match
-//      means 32 banks, the largest Sega mapper image and the most the
-//      whitelist lets FFFF select.
-//   5. Banks 2 up to the size read through slot 2 and emitted.
-// The header's size code is reported but not believed: Game Gear headers
-// were never checked by a BIOS and many carry the wrong code (Sonic 2 says
-// 256 KB and is 512). The size does matter: system.vhd recognises EEPROM
-// cartridges by the CRC32 of the whole image, so a mirrored read of World
-// Series Baseball is not World Series Baseball to it.
-// The CRC32 of the stream comes out for the menu, to compare with the SD
-// image's. At 2 us a byte a 512 KB cartridge takes about 1.2 s with the
-// probes.
-//
-// out_wr/out_addr/out_data have the shape of an APF data_loader's output, so
-// core_top.v merges them into the cartridge slot's stream. At 2 us a byte a
-// 512 KB cartridge takes about a second.
+// stream at boot; the core then runs it as an SD image. Through gg_cart_bus
+// and its write whitelist:
+//   1. Sega mapper to reset state: FFFC=00, FFFD=00, FFFE=01, FFFF=02.
+//   2. Header at 7FF0, 3FF0, 1FF0 until one starts "TMR SEGA". Its size
+//      code is reported, not believed (Sonic 2 says 256 KB, is 512).
+//   3. 0000..7FFF straight: banks 0 and 1 on any cartridge. CRC32 of bank 0.
+//   4. Banks 2, 4, 8, 16 through slot 2, not emitted, CRC32 each. The first
+//      equal to bank 0 is the mirror and the size; none means 32 banks.
+//      The size matters: system.vhd recognises EEPROM carts by whole-image
+//      CRC32.
+//   5. Banks 2 up to the size through slot 2, emitted.
+// out_* have a data_loader's shape. 2 us a byte: 512 KB in about 1.2 s.
 module gg_cart_boot (
     input  wire        clk,
     input  wire        reset,       // high: no cartridge session, everything idle
@@ -60,7 +40,7 @@ module gg_cart_boot (
     output reg  [3:0]  state
 );
 
-// Reflected IEEE CRC32, the zlib convention, as pocket-cartridge's dump does.
+// Reflected IEEE CRC32, zlib convention.
 function [31:0] crc_byte(input [31:0] c_in, input [7:0] d);
     reg [31:0] c;
     integer k;
@@ -238,7 +218,6 @@ always @(posedge clk) begin
                             offset <= offset + 1'b1;
                             state  <= ST_READ_REQ;
                         end else if (crc_probe == crc_bank0) begin
-                            // This bank repeats bank 0: the cartridge ends here.
                             bank_count <= bank;
                             size_bytes <= {12'd0, bank, 14'd0};
                             if (bank == 6'd2) state <= ST_DONE;

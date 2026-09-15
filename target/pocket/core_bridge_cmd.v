@@ -52,9 +52,8 @@ input   wire    [31:0]  savestate_maxloadsize,
 
 output  reg             osnotify_inmenu,
 
-// Cartridge adapter state, APF 1.2 host command 0x00B1. [24] Play Cartridge
-// selected, [16] cartridge power on, [7:0] detected adapter ID (the official
-// Game Gear adapter reports 1). From pocket-cartridge's copy of this file.
+// APF 1.2 host command 0x00B1: [24] Play Cartridge, [16] cart power,
+// [7:0] adapter ID (Game Gear adapter: 1).
 output  reg     [31:0]  cart_report,
 output  reg             cart_report_valid,
 
