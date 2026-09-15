@@ -242,21 +242,8 @@ module core_top (
   // bridge endianness
   assign bridge_endian_little    = 0;
 
-  // cart is unused, so set all level translators accordingly
-  // directions are 0:IN, 1:OUT
-  assign cart_tran_bank3         = 8'hzz;
-  assign cart_tran_bank3_dir     = 1'b0;
-  assign cart_tran_bank2         = 8'hzz;
-  assign cart_tran_bank2_dir     = 1'b0;
-  assign cart_tran_bank1         = 8'hzz;
-  assign cart_tran_bank1_dir     = 1'b0;
-  assign cart_tran_bank0         = 4'hf;
-  assign cart_tran_bank0_dir     = 1'b1;
-  assign cart_tran_pin30         = 1'b0;  // reset or cs2, we let the hw control it by itself
-  assign cart_tran_pin30_dir     = 1'bz;
-  assign cart_pin30_pwroff_reset = 1'b0;  // hardware can control this
-  assign cart_tran_pin31         = 1'bz;  // input
-  assign cart_tran_pin31_dir     = 1'b0;  // input
+  // The cartridge connector belongs to cart_pins, below, which holds every
+  // pin at the safe idle until a Game Gear adapter session is admitted.
 
   // link port is input only
   assign port_tran_so            = 1'bz;
@@ -418,6 +405,8 @@ module core_top (
         32'hF0000210: settings_rd_data <= {31'd0, cheat_overrun_74};
         32'hF0000214: settings_rd_data <= {31'd0, cheat_is_bin_74};
         32'hF0000218: settings_rd_data <= {20'd0, osd_codes_74, osd_titles_74};
+        32'hF0000220: settings_rd_data <= cart_report_74;
+        32'hF0000224: settings_rd_data <= cart_diag_74;
         default: settings_rd_data <= 32'd0;
       endcase
     end
@@ -444,6 +433,8 @@ module core_top (
   wire dataslot_requestwrite_ok = 1;
 
   wire dataslot_allcomplete;
+  wire [31:0] cart_report_74;
+  wire cart_report_valid_74;
 
   // Savestates: MiSTer's engine inside gg_core, the memory and the APF
   // handshake in savestate_apf. The window is the whole 64 KB buffer; the
@@ -513,6 +504,9 @@ module core_top (
       .dataslot_requestwrite_ok (dataslot_requestwrite_ok),
 
       .dataslot_allcomplete(dataslot_allcomplete),
+
+      .cart_report      (cart_report_74),
+      .cart_report_valid(cart_report_valid_74),
 
       .target_cmd_req   (tcmd_req),
       .target_cmd       (tcmd),
@@ -646,12 +640,15 @@ module core_top (
   synch_3 #(3) s_set ({region_jp, sp64, fm_en}, {region_jp_s, sp64_s, fm_en_s}, clk_sys);
   synch_3 #(2) s_cht ({cheats_en, cheats_osd}, {cheats_en_s, cheats_osd_s}, clk_sys);
 
-  wire core_reset = ~reset_n_s | reset_delay_s;
+  wire cart_hold;  // Play Cartridge selected and the image not yet in; below
+  wire core_reset = ~reset_n_s | reset_delay_s | cart_hold;
 
   // The overrun flag the other way, for the menu readout.
   wire rom_overrun;
   wire rom_overrun_74;
   synch_3 s_ovr (rom_overrun, rom_overrun_74, clk_74a);
+  wire [31:0] cart_diag_74;
+  synch_3 #(32) s_cdiag (cart_diag, cart_diag_74, clk_74a);
 
   wire [5:0] cheat_count, cheat_decl;
   wire [19:0] cheat_bytes;
@@ -753,13 +750,176 @@ module core_top (
   // gg_core looks at ioctl_addr once more after the stream ends, to tell a
   // headered dump from a plain one, so the merged address holds the last
   // strobed value rather than falling back to an idle loader's.
-  wire [24:0] sel_addr = gg_wr ? gg_addr : sms_wr ? sms_addr : sg_addr;
+  // The fourth source is the cartridge slot itself, gg_cart_boot below: same
+  // shape, same stream, and it can only run when no slot is loading.
+  wire        cb_wr, cb_busy, cb_done, cb_header_ok, cart_pins_ready;
+  wire [24:0] cb_addr;
+  wire [7:0]  cb_data;
+  wire [3:0]  cb_size_code, cb_state;
+  wire [31:0] cb_size_bytes;
+  wire [24:0] sel_addr = gg_wr ? gg_addr : sms_wr ? sms_addr : sg_wr ? sg_addr : cb_addr;
   reg  [24:0] held_addr = 0;
-  always @(posedge clk_sys) if (gg_wr | sms_wr | sg_wr) held_addr <= sel_addr;
+  always @(posedge clk_sys) if (gg_wr | sms_wr | sg_wr | cb_wr) held_addr <= sel_addr;
 
-  assign ioctl_wr   = gg_wr | sms_wr | sg_wr;
+  assign ioctl_wr   = gg_wr | sms_wr | sg_wr | cb_wr;
   assign ioctl_addr = ioctl_wr ? sel_addr : held_addr;
-  assign ioctl_dout = gg_wr ? gg_dout : sms_wr ? sms_dout : sg_dout;
+  assign ioctl_dout = gg_wr ? gg_dout : sms_wr ? sms_dout : sg_wr ? sg_dout : cb_data;
+
+  // ==========================================================================
+  // Cartridge
+  //
+  // One bitstream, so every package carries this; only kroy.GG's core.json
+  // turns the slot on (cartridge_adapter bit 24, Play Cartridge). The Pocket
+  // reports the adapter over the bridge (0x00B1); a session is admitted when
+  // that says Play Cartridge, power on and the Game Gear adapter's ID, and
+  // the host has left reset. cart_pins then owns the connector, gg_cart_bus
+  // runs the memory cycles, and gg_cart_boot reads the image into the ROM
+  // stream. The machine is held in reset from the moment Play Cartridge is
+  // selected until the last byte is in, so it never runs an empty ROM.
+  //
+  // The first read waits two and a half seconds after admission, which is
+  // the settling time pocket-cartridge found the slot supply needs.
+  // ==========================================================================
+  localparam [7:0] GG_ADAPTER_ID = 8'h01;
+
+  wire [31:0] cart_report_s;
+  wire        cart_report_valid_s;
+  cart_adapter_state adapter_state (
+      .clk_host   (clk_74a),
+      .reset_host (~pll_core_locked),
+      .report_host(cart_report_74),
+      .valid_host (cart_report_valid_74),
+      .clk_sys    (clk_sys),
+      .reset_sys  (~pll_core_locked_s),
+      .report     (cart_report_s),
+      .valid      (cart_report_valid_s),
+      .changed    (),
+      .report_seq ()
+  );
+
+  wire cart_play_s    = cart_report_valid_s && cart_report_s[24];
+  wire cart_powered_s = cart_play_s && cart_report_s[16] && cart_report_s[7:0] == GG_ADAPTER_ID;
+
+  reg cart_session = 0;
+  always @(posedge clk_sys) begin
+    if (!cart_powered_s)  cart_session <= 1'b0;
+    else if (reset_n_s)   cart_session <= 1'b1;
+  end
+
+  reg [27:0] cart_settle  = 0;
+  reg        cart_started = 0;
+  wire       cart_start   = cart_session && cart_pins_ready && !cart_started && cart_settle[27];
+  always @(posedge clk_sys) begin
+    if (!cart_session) begin
+      cart_settle  <= 0;
+      cart_started <= 1'b0;
+    end else begin
+      if (!cart_settle[27]) cart_settle <= cart_settle + 1'b1;
+      if (cart_start) cart_started <= 1'b1;
+    end
+  end
+
+  wire [15:0] cb_e_ad_out;
+  wire        cb_e_ad_oe, cb_e_hi_oe, cb_e_p30_out, cb_e_p30_oe;
+  wire [7:0]  cb_e_hi_out, cb_e_hi_in;
+  wire [3:0]  cb_e_ctl_out;
+
+  cart_pins cart_pins (
+      .clk  (clk_sys),
+      .reset(~pll_core_locked_s),
+      .mode (cart_session ? 2'b11 : 2'b00),
+      .mode_ready(cart_pins_ready),
+
+      .gba_ad_out(16'd0), .gba_ad_oe(1'b0), .gba_hi_out(8'd0), .gba_hi_oe(1'b0),
+      .gba_ctl_out(4'hF), .gba_p30_out(1'b0), .gba_p30_oe(1'b0), .gba_ad_in(), .gba_hi_in(),
+      .gb_ad_out(16'd0), .gb_ad_oe(1'b0), .gb_hi_out(8'd0), .gb_hi_oe(1'b0),
+      .gb_ctl_out(4'hF), .gb_p30_out(1'b0), .gb_p30_oe(1'b0), .gb_ad_in(), .gb_hi_in(),
+
+      .gg_ad_out (cb_e_ad_out),
+      .gg_ad_oe  (cb_e_ad_oe),
+      .gg_hi_out (cb_e_hi_out),
+      .gg_hi_oe  (cb_e_hi_oe),
+      .gg_ctl_out(cb_e_ctl_out),
+      .gg_p30_out(cb_e_p30_out),
+      .gg_p30_oe (cb_e_p30_oe),
+      .gg_hi_in  (cb_e_hi_in),
+
+      .cart_tran_bank2(cart_tran_bank2), .cart_tran_bank2_dir(cart_tran_bank2_dir),
+      .cart_tran_bank3(cart_tran_bank3), .cart_tran_bank3_dir(cart_tran_bank3_dir),
+      .cart_tran_bank1(cart_tran_bank1), .cart_tran_bank1_dir(cart_tran_bank1_dir),
+      .cart_tran_bank0(cart_tran_bank0), .cart_tran_bank0_dir(cart_tran_bank0_dir),
+      .cart_tran_pin30(cart_tran_pin30), .cart_tran_pin30_dir(cart_tran_pin30_dir),
+      .cart_pin30_pwroff_reset(cart_pin30_pwroff_reset),
+      .cart_tran_pin31(cart_tran_pin31), .cart_tran_pin31_dir(cart_tran_pin31_dir)
+  );
+
+  wire        cb_bus_req, cb_bus_wr, cb_bus_done, cb_bus_busy;
+  wire [15:0] cb_bus_addr;
+  wire [7:0]  cb_bus_wdata, cb_bus_rdata;
+
+  // 27 / 54 / 27 clk_sys cycles: 0.5 us setup, 1 us strobe, 0.5 us recovery,
+  // the same bring-up profile pocket-cartridge reads headers with.
+  gg_cart_bus #(
+      .ADDR_SETUP_CYCLES(27),
+      .STROBE_CYCLES    (54),
+      .HOLD_CYCLES      (27)
+  ) gg_cart_bus (
+      .clk    (clk_sys),
+      .reset  (~pll_core_locked_s),
+      .gg_mode(cart_pins_ready),
+      .req    (cb_bus_req),
+      .wr     (cb_bus_wr),
+      .addr   (cb_bus_addr),
+      .wdata  (cb_bus_wdata),
+      .rdata  (cb_bus_rdata),
+      .done   (cb_bus_done),
+      .busy   (cb_bus_busy),
+      .write_active(),
+      .rejected(),
+
+      .e_ad_out (cb_e_ad_out),
+      .e_ad_oe  (cb_e_ad_oe),
+      .e_hi_out (cb_e_hi_out),
+      .e_hi_oe  (cb_e_hi_oe),
+      .e_hi_in  (cb_e_hi_in),
+      .e_ctl_out(cb_e_ctl_out),
+      .e_p30_out(cb_e_p30_out),
+      .e_p30_oe (cb_e_p30_oe)
+  );
+
+  gg_cart_boot gg_cart_boot (
+      .clk  (clk_sys),
+      .reset(!cart_session),
+      .start(cart_start),
+
+      .bus_req  (cb_bus_req),
+      .bus_wr   (cb_bus_wr),
+      .bus_addr (cb_bus_addr),
+      .bus_wdata(cb_bus_wdata),
+      .bus_rdata(cb_bus_rdata),
+      .bus_done (cb_bus_done),
+      .bus_busy (cb_bus_busy),
+
+      .out_wr  (cb_wr),
+      .out_addr(cb_addr),
+      .out_data(cb_data),
+
+      .busy      (cb_busy),
+      .done      (cb_done),
+      .header_ok (cb_header_ok),
+      .size_code (cb_size_code),
+      .size_bytes(cb_size_bytes),
+      .state     (cb_state)
+  );
+
+  // Held in reset from Play Cartridge until the image is in. A wrong or
+  // missing adapter keeps it there, with the CG: readout saying why.
+  assign cart_hold = cart_play_s && !cb_done;
+
+  // For the menu readouts: the report word, and the boot state with the
+  // header verdict and size code.
+  wire [31:0] cart_diag = {cb_state, 3'd0, cb_header_ok, cb_size_code, 3'd0, cb_busy, 3'd0, cb_done,
+                           1'b0, cart_start, cart_started, cart_session, 3'd0, cart_pins_ready};
 
   // ==========================================================================
   // Cheats in
@@ -1123,7 +1283,7 @@ module core_top (
       .pll_locked(pll_core_locked_s),
       .reset     (core_reset),
 
-      .cart_download(cart_download_s),
+      .cart_download(cart_download_s | cb_busy),
       .ioctl_wr     (ioctl_wr),
       .ioctl_addr   (ioctl_addr),
       .ioctl_dout   (ioctl_dout),

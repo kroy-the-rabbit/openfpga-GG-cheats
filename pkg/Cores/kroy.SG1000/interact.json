@@ -126,6 +126,20 @@
         "type": "number_u32",
         "enabled": true,
         "address": "0xF0000218"
+      },
+      {
+        "name": "CG:",
+        "id": 97,
+        "type": "number_u32",
+        "enabled": true,
+        "address": "0xF0000220"
+      },
+      {
+        "name": "CS:",
+        "id": 98,
+        "type": "number_u32",
+        "enabled": true,
+        "address": "0xF0000224"
       }
     ],
     "messages": []

@@ -4,8 +4,8 @@ A Pocket core for the Sega Game Gear, Master System and SG-1000, ported by
 hand from
 [MiSTer-devel/SMS_MiSTer](https://github.com/MiSTer-devel/SMS_MiSTer), with a
 cheat engine, SD-ROM loading and battery saves. One bitstream ships as three
-packages, `kroy.GG`, `kroy.SMS` and `kroy.SG1000`, one per platform.
-Physical cartridge support is not implemented.
+packages, `kroy.GG`, `kroy.SMS` and `kroy.SG1000`, one per platform. The
+Game Gear package plays cartridges through Analogue's Game Gear adapter.
 
 **Based on SMS_MiSTer by Sorgelig**, which is a port of Ben's Sega Master
 System for the Papilio, with the T80, jt89, VM2413 and the VDP by their
@@ -36,7 +36,7 @@ category.
 | Master System at 192, 224 and 240 lines | 192 tested (Phantasy Star, Ys); 224 and 240 untested |
 | SG-1000 | Flicky, The Castle and Zaxxon boot; The Castle's 32 KB cart RAM is written back, reload untested |
 | FM sound (YM2413) | OutRun switches between FM and PSG on the Pocket; output averaged per 48 kHz frame |
-| Physical cartridge adapter | Not implemented |
+| Game Gear cartridges through Analogue's adapter | Read into SDRAM at boot, then run as an SD image; untested |
 
 Merge a release package's `Assets`, `Cores` and `Platforms` into the SD
 root; the three packages are independent, so install only the platforms you
@@ -45,6 +45,13 @@ and `.sg` in `Assets/sg1000/common/`. No BIOS is needed. Put `Game.gg.cht`
 beside `Game.gg`, select the cheats in the file and turn on **Cheats** in the
 core menu. The cheat and overlay switches start off and are not persisted.
 `.chtbin` also works, without names. The shared table holds 32 codes.
+**Play Cartridge** in the Game Gear entry, with Analogue's Game Gear
+adapter fitted, reads the cartridge through the adapter and then runs it as
+if it had come from the card: the cartridge's own mapper is used only to get
+the bytes out, at about a second for a 512 KB game. Cart RAM and EEPROM saves
+go to the Pocket's save file for the cartridge slot, not back to the
+cartridge. `CG:` and `CS:` in the menu are the adapter report and the read
+state, for when nothing appears.
 **FM sound** in the core menu is the YM2413 and starts on. A game asks for
 the chip through port $F2 when it boots, so the switch takes effect at the
 next **Reset core**, and some export titles ask only with **Region** set to

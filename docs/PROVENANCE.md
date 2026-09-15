@@ -75,6 +75,18 @@ The picker keeps byte-identical copies of each core's host-side decoder and
 beside the existing ones without collision: `tools/cheats/ggcht.py` beside
 `gbacht.py`, `tools/cheats/gg2bin.py` beside `cht2bin.py`.
 
+## Cartridge connector
+
+`target/pocket/cart/cart_pins.sv`, `gg_cart_bus.sv` and
+`cart_adapter_state.sv` are pocket-cartridge's, from its `feature/gg-dumping`
+branch at `99e2ac6`, unchanged. The Game Gear adapter pin map inside
+`cart_pins.sv` is from sfiera/pocket-adapters (`gg.md` at `4c61591`), and
+pocket-cartridge read a cartridge header through it on 2026-09-15. The
+`0x00B1` adapter report decode in `target/pocket/core_bridge_cmd.v` is
+theirs too. `gg_cart_boot.sv`, the sequencer that reads the image into the
+ROM stream, is this project's. `tools/sim/gg_cart_model.sv` is
+pocket-cartridge's cartridge model.
+
 ## Artwork
 
 `assets/icon-gg.svg`, `icon-sms.svg` and `icon-sg1000.svg` are this

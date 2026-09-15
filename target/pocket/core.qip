@@ -1,9 +1,10 @@
 # ==============================================================================
 # The Pocket side of the core. Pulled in by platform/pocket/pocket.tcl.
 #
-# core_bridge_cmd.v, data_loader.sv, data_unloader.sv, sound_i2s.sv and
-# sync_fifo.sv came from pocket-pcengine/target/pocket/ unchanged; core_top.v
-# is this core's, built on the same template.
+# data_loader.sv, data_unloader.sv, sound_i2s.sv and sync_fifo.sv came from
+# pocket-pcengine/target/pocket/ unchanged; core_bridge_cmd.v did too, plus
+# pocket-cartridge's 0x00B1 decode; core_top.v is this core's, built on the
+# same template.
 #
 # data_unloader.sv is not instantiated until P1 writes the save slot back out.
 # It is listed so the file that P1 needs is already in the project rather than
@@ -19,5 +20,13 @@ set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "sync_fifo.sv"]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "savestate_apf.sv"]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "audio_frame_avg.sv"]
+# The cartridge connector. cart_pins.sv, gg_cart_bus.sv and
+# cart_adapter_state.sv are pocket-cartridge's (feature/gg-dumping, 99e2ac6),
+# unchanged; gg_cart_boot.sv is this core's. core_bridge_cmd.v carries their
+# 0x00B1 decode.
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "cart/cart_pins.sv"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "cart/gg_cart_bus.sv"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "cart/cart_adapter_state.sv"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "cart/gg_cart_boot.sv"]
 set_global_assignment -name QIP_FILE           [file join $::quartus(qip_path) "mf_pllbase.qip"]
 set_global_assignment -name QIP_FILE           [file join $::quartus(qip_path) "pin_ddio_clk.qip"]

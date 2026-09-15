@@ -52,6 +52,12 @@ input   wire    [31:0]  savestate_maxloadsize,
 
 output  reg             osnotify_inmenu,
 
+// Cartridge adapter state, APF 1.2 host command 0x00B1. [24] Play Cartridge
+// selected, [16] cartridge power on, [7:0] detected adapter ID (the official
+// Game Gear adapter reports 1). From pocket-cartridge's copy of this file.
+output  reg     [31:0]  cart_report,
+output  reg             cart_report_valid,
+
 output  reg             savestate_start,        // core should detect rising edge on this,
 input   wire            savestate_start_ack,    // and then assert ack for at least 1 cycle
 input   wire            savestate_start_busy,   // assert constantly while in progress after ack
@@ -189,6 +195,8 @@ initial begin
     savestate_start <= 0;
     savestate_load <= 0;
     osnotify_inmenu <= 0;
+    cart_report <= 0;
+    cart_report_valid <= 0;
     status_setup_done_queue <= 0;
     target_cmd_ack <= 0;
     target_cmd_done <= 0;
@@ -398,6 +406,12 @@ always @(posedge clk) begin
         16'h00B0: begin
             // OS Notify: Menu State
             osnotify_inmenu <= host_20[0];
+            hstate <= ST_DONE_OK;
+        end
+        16'h00B1: begin
+            // Cartridge adapter state
+            cart_report <= host_20;
+            cart_report_valid <= 1'b1;
             hstate <= ST_DONE_OK;
         end
         default: begin
