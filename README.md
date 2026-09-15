@@ -14,10 +14,11 @@ cheat engine.
 ## Status
 
 Release `v0.9999.20260913` packages build `edc23d4`. Tested source is
-`96ac103`, which also boots the EEPROM titles that hang on `edc23d4`. ROMs,
-video, audio, controls, both kinds of save, both cheat mechanisms and the
-named overlay are confirmed on hardware. The build uses 7,687 ALMs (41.6 %)
-and passes every timing category.
+`596823a`: it boots the EEPROM titles that hang on `edc23d4` and adds save
+states and sleep. ROMs, video, audio, controls, both kinds of save, save
+states, sleep, both cheat mechanisms and the named overlay are confirmed on
+hardware. The build uses 9,641 ALMs (52.2 %) and passes every timing
+category.
 
 | Feature | Status |
 |---|---|
@@ -27,7 +28,8 @@ and passes every timing category.
 | 93C46 EEPROM saves | World Series Baseball '95 saved and loaded after a power cycle |
 | Game Genie ROM patches and Pro Action Replay RAM writes | Tested on Pocket |
 | `.cht`, `.chtbin` and named overlay | Tested, including switching cheat files |
-| Physical cartridge adapter, sleep and savestates | Not implemented |
+| Save states and sleep | Menu save and load, sleep and wake, tested on Pocket; MiSTer's engine behind APF |
+| Physical cartridge adapter | Not implemented |
 
 Merge the release package's `Assets`, `Cores` and `Platforms`
 into the SD root.

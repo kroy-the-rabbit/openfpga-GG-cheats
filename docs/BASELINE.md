@@ -1,10 +1,13 @@
 # Build measurements
 
-Tested source `96ac103`, seed 1, Quartus Lite 25.1std build 1129.
-The build uses 7,687 / 18,480 ALMs (41.6 %) and 80 RAM blocks.
-Setup is +2.663 ns, hold +0.136 ns; all timing categories pass.
-ROMs, battery saves, the 93C46 EEPROM, both cheat mechanisms and the named
-overlay were tested on Pocket. The bitstream SHA-256 is
-`df394d6097260689b14eab789f94f9313600f637d328d8fc23183a4bba41d801`.
+Tested source `596823a`, seed 3, Quartus Lite 25.1std build 1129.
+The build uses 9,641 / 18,480 ALMs (52.2 %) and 168 RAM blocks, of which
+the savestate engine and its 64 KB buffer are most of the growth from the
+first release's 7,291 and 80.
+Setup is +2.382 ns, hold +0.107 ns; all timing categories pass.
+ROMs, battery saves, the 93C46 EEPROM, save states, sleep, both cheat
+mechanisms and the named overlay were tested on Pocket. The bitstream
+SHA-256 is
+`dfaad8ec2d8b8b20ff148d2bd9acce0ee1171c9ba9c7c23a8481d93beb5d8d04`.
 
 [Build and hardware history](https://github.com/kroy-the-rabbit/pocket-engineering/blob/main/game-gear/docs/BASELINE.md) (private).
