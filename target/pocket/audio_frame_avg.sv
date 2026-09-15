@@ -9,17 +9,19 @@
 // 49.7 kHz stream at 48 kHz drops one sample in every thirty: a buzz at the
 // difference of the two rates, over every FM note.
 //
-// A boxcar over one output frame (about 1,119 clk_sys cycles) has its nulls
-// at 48 kHz and its multiples, which is where the sample-and-hold images of
-// the FM stream sit, and costs 4 dB at 24 kHz. The frame tick is generated
+// A boxcar over the first 1,024 clk_sys cycles of each output frame (the
+// frame is about 1,119 cycles) has its nulls at 52.4 kHz and its multiples,
+// which puts the sample-and-hold images of the FM stream at 49.7 kHz and
+// 99.4 kHz 25 dB down, and costs 4 dB at 24 kHz. The frame tick is generated
 // here from clk_sys with a fractional accumulator, so it drifts against the
 // i2s frame in clk_74a and the i2s still drops or repeats a value now and
 // then, but a value that is already an average, not a raw step.
 //
-// The sum of up to 1,120 signed 16-bit samples fits in 27 bits. Dividing by
-// the count is a multiply by 14990 / 2^24, which is 1 / 1119.2; the count
-// alternates between 1,118 and 1,119, so the gain sits between 0.999 and
-// 1.000 and a full-scale input cannot wrap the 16-bit slice.
+// A power-of-two window because the divide is then a shift. The first cut
+// averaged the whole frame and scaled by a constant, and Quartus packed the
+// sum register into the DSP multiplier's input stage, whose clock arrives
+// 0.65 ns after the fabric flops feeding it: a 20 ps hold violation at the
+// slow cold corner on every seed. No multiplier, no DSP block, no such path.
 
 `default_nettype none
 
@@ -37,35 +39,23 @@ module audio_frame_avg #(
   reg [26:0] frac = 0;
   wire tick = (frac + RATE_HZ) >= CLK_HZ;
 
+  // 1,024 samples of 16 bits fit in 26 bits; the window counter's carry
+  // closes it.
   reg signed [26:0] acc_l = 0, acc_r = 0;
-  reg signed [26:0] sum_l = 0, sum_r = 0;
-  reg               dump = 0;
+  reg        [10:0] n = 11'd1024;   // bit 10 set: window closed
 
   always @(posedge clk) begin
     frac <= tick ? (frac + RATE_HZ - CLK_HZ) : (frac + RATE_HZ);
-    dump <= tick;
     if (tick) begin
-      sum_l <= acc_l + in_l;
-      sum_r <= acc_r + in_r;
-      acc_l <= 0;
-      acc_r <= 0;
-    end else begin
+      out_l <= acc_l[25:10];
+      out_r <= acc_r[25:10];
+      acc_l <= 27'sd0;
+      acc_r <= 27'sd0;
+      n     <= 11'd0;
+    end else if (!n[10]) begin
       acc_l <= acc_l + in_l;
       acc_r <= acc_r + in_r;
-    end
-  end
-
-  // In logic, not a DSP block. Quartus packs the sum register into the DSP
-  // block's input stage when it can, and that stage's clock arrives 0.65 ns
-  // after the fabric flops feeding it, which is more than the data path:
-  // a hold violation of 20 ps at the slow cold corner, on every seed.
-  (* multstyle = "logic" *) wire signed [42:0] scaled_l = sum_l * 16'sd14990;
-  (* multstyle = "logic" *) wire signed [42:0] scaled_r = sum_r * 16'sd14990;
-
-  always @(posedge clk) begin
-    if (dump) begin
-      out_l <= scaled_l[39:24];
-      out_r <= scaled_r[39:24];
+      n     <= n + 1'b1;
     end
   end
 

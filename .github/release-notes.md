@@ -1,24 +1,59 @@
-First public Game Gear release for Analogue Pocket, ported from
-MiSTer-devel/SMS_MiSTer. SD-ROM gameplay, audio, controls, battery saves,
-Game Genie ROM patches, Pro Action Replay RAM writes and the named cheat
-overlay are confirmed on hardware. Switching between cheat files is tested.
+## Game Gear, Master System and SG-1000
 
-Download `kroy.GG_0.9999.20260913.zip` and merge `Assets`, `Cores` and
-`Platforms` into the SD root. Put `.gg` ROMs in `Assets/gg/common/`.
-No BIOS is required. Put `Game.gg.cht` beside `Game.gg` and enable the
-desired cheats in that file, then turn on **Cheats** in the core menu.
-The cheat and overlay switches start off. `.chtbin` is also supported,
-without names. The code table holds 32 entries shared by both mechanisms.
+One core now ships as three independent packages: **kroy.GG**, **kroy.SMS**
+and **kroy.SG1000**. Install the platforms you want. Game Gear and Master
+System ROMs run with Game Genie ROM patches, Pro Action Replay RAM writes,
+and named cheat overlays, confirmed on the Pocket. Master System testing
+includes OutRun's timer cheats and its overlay at the full 256-pixel width.
 
-Eternal Legend's battery save survived a power cycle and reloaded.
-Physical cartridges, sleep, savestates, Master System and SG-1000 are not
-supported by this package. The platform image is plain and the core icon is
-the Pocket default.
+This update also brings save states, sleep and wake, YM2413 FM sound, and
+correct EEPROM-game detection. World Series Baseball '95 now boots from SD
+and keeps its save across a power cycle. Game Gear and Master System SD
+battery saves are tested. FM output is averaged over each Pocket audio frame;
+OutRun's FM/PSG switch is confirmed. **FM sound** defaults on and takes effect
+at the next **Reset core**; some export games require **Region: Japan**.
 
-Built from `edc23d4`, Quartus Lite 25.1std build 1129: 7,291 ALMs (39.5 %),
-+2.259 ns setup, +0.111 ns hold; all timing categories pass. The release
-includes `report.txt` and `SHA256SUMS`.
+SG-1000 boots Flicky, The Castle and Zaxxon. **SG-1000 cheats are untested.**
+The Castle's 32 KB RAM is written back, but save reload is not verified.
+Master System's 192-line display is tested; 224 and 240 lines remain untested.
 
-Based on SMS_MiSTer by Sorgelig, from Ben's Sega Master System for the Papilio,
-with T80, jt89, VM2413 and the VDP credited in the preserved upstream headers.
-See [provenance](https://github.com/kroy-the-rabbit/openfpga-GG-cheats/blob/main/docs/PROVENANCE.md).
+## Limited Game Gear cartridge support
+
+With Analogue's Game Gear adapter, select **Play Cartridge** in the Game Gear
+core. Sonic 2, Arch Rivals and World Series Baseball (an EEPROM cartridge)
+play with cheats. The core reads the ROM through the physical mapper, up to
+512 KB, then runs the copy from memory. This is a small tested cartridge set,
+not a claim that every cartridge or mapper works.
+
+**Cartridge saves do not work in this release.** Nothing is written back to
+the physical cartridge, and the Pocket keeps no SD save file in Play
+Cartridge mode. Use an SD ROM when save persistence is needed. The working
+SD-ROM save support above does not extend to Play Cartridge.
+
+## Install and use
+
+Download the ZIP for each desired platform and merge its `Assets`, `Cores`
+and `Platforms` into the SD root, preserving existing files. No BIOS is needed.
+
+| Package | ROM path | Cheat file beside the ROM |
+|---|---|---|
+| `kroy.GG_<version>.zip` | `Assets/gg/common/Game.gg` | `Game.gg.cht` |
+| `kroy.SMS_<version>.zip` | `Assets/sms/common/Game.sms` | `Game.sms.cht` |
+| `kroy.SG1000_<version>.zip` | `Assets/sg1000/common/Game.sg` | `Game.sg.cht` |
+
+Select the desired cheats in the file, load it through **Cheats** where
+needed, and turn on the global **Cheats** switch. Cheats and the overlay start
+off and are not persisted. `.chtbin` also works, without names. The table holds
+32 codes shared by both mechanisms. Pocket Tools prepares named cheat files
+and installs each available platform package independently.
+
+## Credits
+
+Ported from [SMS_MiSTer](https://github.com/MiSTer-devel/SMS_MiSTer) by Sorgelig,
+from Ben's Sega Master System for the Papilio, with T80, jt89, VM2413 and the
+VDP credited in preserved upstream headers. See
+[provenance](https://github.com/kroy-the-rabbit/openfpga-GG-cheats/blob/main/docs/PROVENANCE.md).
+
+<!-- Release preparation: append the passing build's source commit, bitstream
+SHA-256, utilization and timing results after hardware verification. Do not
+publish this draft while fitting is pending. -->
