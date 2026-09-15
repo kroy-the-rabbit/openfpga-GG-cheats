@@ -19,7 +19,7 @@
 #   make clean                  remove build/
 #
 # Builds run on the runners through the orchestrator's runner-build, never
-# here (docs/HANDOFF.md, "Runners"). CI never builds: .github/workflows/release.yml verifies the published package.
+# here (engineering HANDOFF.md, "Runners"). CI never builds: .github/workflows/release.yml verifies the published package.
 #
 #   make test                   provenance, project file paths, APF manifests
 
