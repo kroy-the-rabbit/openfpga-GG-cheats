@@ -56,6 +56,7 @@ module gg_core (
     input  wire        ggres,          // 1 = the 160x144 Game Gear window
     input  wire        region_jp,      // 0 = export, 1 = Japan
     input  wire        sp64,           // lift the 8-sprites-per-line limit
+    input  wire        fm_ena,         // let a game that asks for the YM2413 have it
 
     // ---- video, clk_sys domain --------------------------------------------
     output wire        ce_pix,
@@ -606,7 +607,7 @@ system #(63) system_inst (
 
     .audioL             (audio_l),
     .audioR             (audio_r),
-    .fm_ena             (1'b0),   // a Game Gear has no YM2413
+    .fm_ena             (fm_ena),
 
     .dbr                (1'b1),   // a cartridge is present
     .sp64               (sp64),

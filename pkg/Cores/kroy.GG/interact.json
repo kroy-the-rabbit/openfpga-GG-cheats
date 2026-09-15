@@ -67,6 +67,18 @@
         "value": "0x00000001"
       },
       {
+        "name": "FM sound",
+        "id": 12,
+        "type": "check",
+        "enabled": true,
+        "address": "0xF0000110",
+        "persist": true,
+        "writeonly": true,
+        "mask": "0xFFFFFFFE",
+        "defaultval": "0x00000001",
+        "value": "0x00000001"
+      },
+      {
         "name": "RQ:",
         "id": 90,
         "type": "number_u32",

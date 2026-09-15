@@ -359,6 +359,9 @@ module core_top (
   // not offer a switch that does nothing. The address is claimed here so the
   // one it eventually gets is the one this already answers.
   reg cheats_osd = 0;
+  // YM2413. On by default as on MiSTer; a game still has to ask for it
+  // through port $F2, and Game Gear and SG-1000 titles never do.
+  reg fm_en = 1;
 
   reg [31:0] settings_rd_data = 0;
 
@@ -384,6 +387,9 @@ module core_top (
         32'hF000010C: begin
           cheats_osd <= bridge_wr_data[0];
         end
+        32'hF0000110: begin
+          fm_en <= bridge_wr_data[0];
+        end
       endcase
     end
 
@@ -393,6 +399,7 @@ module core_top (
         32'hF0000104: settings_rd_data <= {31'd0, sp64};
         32'hF0000108: settings_rd_data <= {31'd0, cheats_en};
         32'hF000010C: settings_rd_data <= {31'd0, cheats_osd};
+        32'hF0000110: settings_rd_data <= {31'd0, fm_en};
         // Diagnostics. The Pocket menu is the only console this core has, so
         // the one thing that can go wrong silently is reported as a number:
         // a non-zero value here means bytes were dropped on the way into
@@ -620,7 +627,7 @@ module core_top (
   wire save_download_s;
   wire [15:0] cont1_key_s;
   wire cheat_download_s;
-  wire region_jp_s, sp64_s;
+  wire region_jp_s, sp64_s, fm_en_s;
   wire cheats_en_s, cheats_osd_s;
   wire reset_delay_s;
 
@@ -636,7 +643,7 @@ module core_top (
   synch_3 s_chdl (cheat_download_74, cheat_download_s, clk_sys);
   synch_3 s_rstd (reset_delay > 0, reset_delay_s, clk_sys);
   synch_3 #(16) s_cont1 (cont1_key, cont1_key_s, clk_sys);
-  synch_3 #(2) s_set ({region_jp, sp64}, {region_jp_s, sp64_s}, clk_sys);
+  synch_3 #(3) s_set ({region_jp, sp64, fm_en}, {region_jp_s, sp64_s, fm_en_s}, clk_sys);
   synch_3 #(2) s_cht ({cheats_en, cheats_osd}, {cheats_en_s, cheats_osd_s}, clk_sys);
 
   wire core_reset = ~reset_n_s | reset_delay_s;
@@ -1130,6 +1137,7 @@ module core_top (
       .ggres    (sys_gg_s),
       .region_jp(region_jp_s),
       .sp64     (sp64_s),
+      .fm_ena   (fm_en_s),
 
       .ce_pix(ce_pix),
       .color (color),
