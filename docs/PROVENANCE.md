@@ -57,6 +57,7 @@ combined work is GPL-3.
 | `tools/podman/Containerfile` | `pocket-gbc` | the header's project name |
 | `tools/podman/fetch-installers.sh` | `pocket-gbc` | nothing |
 | `tools/podman/compare.sh` | `pocket-pcengine` | the default revision, `gg_pocket` |
+| `tools/icon/genicon.py` | `pocket-gbc`, `tools/cheats/genicon.py` | the venv path in the usage note |
 
 `rtl/gg/cheat_binloader.sv` is this project's, but its shape is
 `pocket-gba`'s: the magic interlock, the byte counter, the shift register and
@@ -73,3 +74,17 @@ The picker keeps byte-identical copies of each core's host-side decoder and
 `make sync-check` there compares them, so this repository's are named to sit
 beside the existing ones without collision: `tools/cheats/ggcht.py` beside
 `gbacht.py`, `tools/cheats/gg2bin.py` beside `cht2bin.py`.
+
+## Artwork
+
+`assets/icon.svg` is this project's. `make icon` renders it through
+ImageMagick and `tools/icon/genicon.py` into `pkg/Cores/kroy.GG/icon.bin`:
+36x36, one little-endian 16-bit word per pixel, intensity in the low byte,
+column major. The order was confirmed against shipped third-party icons on
+2026-09-14; a row-major file shows transposed on the Pocket.
+
+`assets/platform.svg` is this project's too. `make platform` renders it into
+`pkg/Platforms/_images/gg.bin`: 521x165, one little-endian 16-bit word per
+pixel, the low byte is 255 minus the grey level, stored column major with the
+columns reversed. That format was read back from a community image sitting
+beside its PNG source on the card. No third-party image is shipped.

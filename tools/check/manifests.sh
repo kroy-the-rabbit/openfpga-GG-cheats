@@ -61,8 +61,17 @@ ver=$(jq -r '.core.metadata.version' "$CORE_JSON")
 for pid in $(jq -r '.core.metadata.platform_ids[]' "$CORE_JSON"); do
   [[ -f "pkg/Platforms/$pid.json" ]] || fail "core.json claims platform '$pid' with no pkg/Platforms/$pid.json"
   [[ -f "pkg/Platforms/_images/$pid.bin" ]] || fail "no platform image pkg/Platforms/_images/$pid.bin"
+  # 521x165, one 16-bit word per pixel. A single distinct word is a flat fill,
+  # which is what shipped as the placeholder until 2026-09-14.
+  [[ $(stat -c %s "pkg/Platforms/_images/$pid.bin") -eq 171930 ]] || fail "pkg/Platforms/_images/$pid.bin is not 171930 bytes"
+  [[ $(od -An -tx2 -v "pkg/Platforms/_images/$pid.bin" | tr -s ' ' '\n' | sort -u | grep -c .) -gt 1 ]] || fail "pkg/Platforms/_images/$pid.bin is a flat fill"
   [[ -d "pkg/Assets/$pid/common" ]] || fail "no pkg/Assets/$pid/common for ROMs to live in"
 done
+
+# ---- core icon --------------------------------------------------------------
+# 36x36, one 16-bit word per pixel, 2592 bytes. tools/icon/genicon.py writes it.
+[[ -f "$CORE_DIR/icon.bin" ]] || fail "no $CORE_DIR/icon.bin"
+[[ $(stat -c %s "$CORE_DIR/icon.bin") -eq 2592 ]] || fail "$CORE_DIR/icon.bin is not 2592 bytes"
 
 # ---- data slots ------------------------------------------------------------
 DATA_JSON="$CORE_DIR/data.json"

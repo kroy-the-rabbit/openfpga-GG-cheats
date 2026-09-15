@@ -36,8 +36,8 @@ beside `Game.gg`, select the cheats in the file and turn on **Cheats** in the
 core menu. The cheat and overlay switches start off and are not persisted.
 `.chtbin` also works, without names. The shared table holds 32 codes.
 
-The current package uses a plain platform image and the Pocket's default core
-icon. See [docs/PROVENANCE.md](docs/PROVENANCE.md) for source attribution.
+See [docs/PROVENANCE.md](docs/PROVENANCE.md) for source attribution,
+including the platform image and the core icon.
 
 The Game Gear runs at 160 x 144, which the Pocket's 1600 x 1440 display shows
 at exactly ten times, so there is one video mode and no scaling to argue with.
@@ -59,6 +59,8 @@ rather than a technical one; nothing here is built for them yet.
     make test      provenance, Quartus project paths, APF manifests
     make dist      package a flashable core -> build/gg/dist/
     make report    re-read an existing build's utilisation and slack
+    make icon      render assets/icon.svg into the core icon
+    make platform  render assets/platform.svg into the platform image
 
 Releases are built from the tagged commit on a controlled builder with Quartus
 Prime Lite 25.1std. No Quartus runs on GitHub; the release workflow only checks

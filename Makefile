@@ -18,6 +18,8 @@
 #   make shell                  interactive shell in the Quartus container
 #   make compare A=gg B=baseline   resource and timing delta between two builds
 #   make flash                  merge build/gg/dist onto the mounted Pocket card
+#   make icon                   render assets/icon.svg -> pkg/Cores/kroy.GG/icon.bin
+#   make platform               render assets/platform.svg -> pkg/Platforms/_images/gg.bin
 #   make clean                  remove build/
 #
 # Release builds run on controlled builders. CI builds nothing:
@@ -37,7 +39,7 @@ REV     ?= gg_pocket
 HARNESS := tools/podman
 DL      := $(HARNESS)/dl
 
-.PHONY: installers image gg dist report compare shell clean test flash
+.PHONY: installers image gg dist report compare shell clean test flash icon platform
 
 installers:
 	$(HARNESS)/fetch-installers.sh
@@ -67,6 +69,19 @@ report:
 
 flash:
 	BUILD_NAME=$(BUILD_NAME) tools/flash.sh $(SD)
+
+# ImageMagick renders the SVG; the encoder needs Pillow, so it runs from a venv
+# under build/ (see tools/icon/genicon.py).
+VENV ?= build/gg/venv
+icon:
+	[ -x $(VENV)/bin/python3 ] || (python3 -m venv $(VENV) && $(VENV)/bin/pip -q install pillow)
+	magick -background none -density 576 assets/icon.svg -resize 288x288 build/gg/icon.png
+	$(VENV)/bin/python3 tools/icon/genicon.py build/gg/icon.png pkg/Cores/kroy.GG/icon.bin
+
+platform:
+	[ -x $(VENV)/bin/python3 ] || (python3 -m venv $(VENV) && $(VENV)/bin/pip -q install pillow)
+	magick +antialias -background white assets/platform.svg -colorspace Gray -depth 8 build/gg/platform.png
+	$(VENV)/bin/python3 tools/icon/genplatform.py build/gg/platform.png pkg/Platforms/_images/gg.bin
 
 shell:
 	$(PODMAN) run --rm -it --userns=keep-id --security-opt label=disable \

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!--
+  Game Gear platform image, 521x165, in the three-quarter view the sibling
+  cores' images use: the long axis runs up and to the right at 2:1, the short
+  axis down and to the right. Five greys and no anti-aliasing, so it reads as
+  pixel art. The console sits left of centre; the Pocket's library draws its
+  text over the right-hand side.
+
+  Top face is drawn in console units, 150 long by 80 deep, through
+  matrix(0.9 -0.45 0.9 0.45 70 95). The thickness is that outline repeated
+  one pixel lower ten times, drawn first.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 521 165" width="521" height="165"
+     shape-rendering="crispEdges">
+  <rect width="521" height="165" fill="#ffffff"/>
+
+  <!-- thickness: the top outline stacked one pixel at a time, ten deep, so
+       the rounded corners carry down the sides -->
+  <g transform="translate(0,10)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="80" rx="8" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="77" rx="7" fill="#202020"/></g></g>
+  <g transform="translate(0,9)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="80" rx="8" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="77" rx="7" fill="#202020"/></g></g>
+  <g transform="translate(0,8)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="80" rx="8" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="77" rx="7" fill="#202020"/></g></g>
+  <g transform="translate(0,7)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="80" rx="8" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="77" rx="7" fill="#202020"/></g></g>
+  <g transform="translate(0,6)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="80" rx="8" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="77" rx="7" fill="#202020"/></g></g>
+  <g transform="translate(0,5)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="80" rx="8" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="77" rx="7" fill="#202020"/></g></g>
+  <g transform="translate(0,4)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="80" rx="8" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="77" rx="7" fill="#202020"/></g></g>
+  <g transform="translate(0,3)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="80" rx="8" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="77" rx="7" fill="#202020"/></g></g>
+  <g transform="translate(0,2)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="80" rx="8" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="77" rx="7" fill="#202020"/></g></g>
+  <g transform="translate(0,1)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="80" rx="8" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="77" rx="7" fill="#202020"/></g></g>
+  <g transform="matrix(0.9 -0.45 0.9 0.45 70 95)">
+    <!-- top face: outline, body -->
+    <rect x="0" y="0" width="150" height="80" rx="8" fill="#000000"/>
+    <rect x="1.5" y="1.5" width="147" height="77" rx="7" fill="#4a4a4a"/>
+    <!-- a highlight along the far edges -->
+    <rect x="4" y="3" width="142" height="1.5" fill="#9a9a9a"/>
+
+    <!-- screen bezel and screen -->
+    <rect x="42" y="12" width="66" height="54" rx="4" fill="#000000"/>
+    <rect x="47" y="17" width="56" height="42" fill="#9a9a9a"/>
+    <rect x="47" y="17" width="56" height="2" fill="#c8c8c8"/>
+
+    <!-- d-pad -->
+    <rect x="18" y="30" width="9" height="28" rx="2" fill="#000000"/>
+    <rect x="8.5" y="39.5" width="28" height="9" rx="2" fill="#000000"/>
+
+    <!-- 1 and 2 buttons -->
+    <circle cx="124" cy="52" r="5.5" fill="#000000"/>
+    <circle cx="137" cy="41" r="5.5" fill="#000000"/>
+
+    <!-- start -->
+    <rect x="120" y="9" width="16" height="5" rx="2.5" fill="#000000"/>
+
+    <!-- speaker -->
+    <g fill="#000000">
+      <rect x="10" y="8" width="2" height="2"/><rect x="15" y="8" width="2" height="2"/><rect x="20" y="8" width="2" height="2"/>
+      <rect x="12.5" y="12" width="2" height="2"/><rect x="17.5" y="12" width="2" height="2"/><rect x="22.5" y="12" width="2" height="2"/>
+      <rect x="10" y="16" width="2" height="2"/><rect x="15" y="16" width="2" height="2"/><rect x="20" y="16" width="2" height="2"/>
+    </g>
+  </g>
+</svg>
