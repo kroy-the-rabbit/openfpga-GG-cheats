@@ -1288,9 +1288,21 @@ module core_top (
   // ==========================================================================
   // Audio
   //
-  // The PSG output is a continuously updated signed level, not a stream of
-  // samples: sound_i2s resamples it to 48 kHz by taking whatever it finds.
+  // The mixer output is a continuously updated signed level, not a stream of
+  // samples: sound_i2s takes whatever it finds when its 48 kHz frame comes
+  // round. audio_frame_avg averages each frame first, for the YM2413's sake
+  // (see the file).
   // ==========================================================================
+  wire signed [15:0] audio_avg_l, audio_avg_r;
+
+  audio_frame_avg audio_frame_avg (
+      .clk  (clk_sys),
+      .in_l (audio_l),
+      .in_r (audio_r),
+      .out_l(audio_avg_l),
+      .out_r(audio_avg_r)
+  );
+
   sound_i2s #(
       .CHANNEL_WIDTH(16),
       .SIGNED_INPUT (1)
@@ -1298,8 +1310,8 @@ module core_top (
       .clk_74a  (clk_74a),
       .clk_audio(clk_sys),
 
-      .audio_l(audio_l),
-      .audio_r(audio_r),
+      .audio_l(audio_avg_l),
+      .audio_r(audio_avg_r),
 
       .audio_mclk(audio_mclk),
       .audio_lrck(audio_lrck),

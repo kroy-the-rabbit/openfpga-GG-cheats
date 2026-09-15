@@ -18,5 +18,6 @@ set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "sound_i2s.sv"]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "sync_fifo.sv"]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "savestate_apf.sv"]
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "audio_frame_avg.sv"]
 set_global_assignment -name QIP_FILE           [file join $::quartus(qip_path) "mf_pllbase.qip"]
 set_global_assignment -name QIP_FILE           [file join $::quartus(qip_path) "pin_ddio_clk.qip"]
