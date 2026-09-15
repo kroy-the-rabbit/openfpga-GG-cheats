@@ -31,7 +31,7 @@ category.
 | Battery saves | Eternal Legend, Phantasy Star and Ys saved and loaded after a power cycle |
 | 93C46 EEPROM saves | World Series Baseball '95 saved and loaded after a power cycle |
 | Game Genie ROM patches and Pro Action Replay RAM writes | Tested on Pocket, Game Gear and Master System (OutRun's timer) |
-| `.cht`, `.chtbin` and named overlay | Tested, including switching cheat files |
+| `.cht`, `.chtbin` and named overlay | Tested, including switching cheat files; overlay confirmed in the 256-wide Master System frame |
 | Save states and sleep | Menu save and load, sleep and wake, tested on Pocket; MiSTer's engine behind APF |
 | Master System at 192, 224 and 240 lines | 192 tested (Phantasy Star, Ys); 224 and 240 untested |
 | SG-1000 | Flicky, The Castle and Zaxxon boot; The Castle's 32 KB cart RAM is written back, reload untested |
