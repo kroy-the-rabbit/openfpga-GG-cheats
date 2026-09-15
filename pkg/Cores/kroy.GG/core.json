@@ -2,9 +2,13 @@
   "core": {
     "magic": "APF_VER_1",
     "metadata": {
-      "platform_ids": ["gg"],
+      "platform_ids": [
+        "gg",
+        "sms",
+        "sg1000"
+      ],
       "shortname": "GG",
-      "description": "Sega Game Gear",
+      "description": "Sega Game Gear, Master System and SG-1000",
       "author": "kroy",
       "url": "https://github.com/kroy-the-rabbit/openfpga-GG-cheats",
       "version": "0.9999",

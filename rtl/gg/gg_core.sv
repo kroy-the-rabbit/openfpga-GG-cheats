@@ -44,6 +44,14 @@ module gg_core (
     // [0] right [1] left [2] down [3] up [4] button 1 [5] button 2 [6] start
     input  wire  [6:0] joy1,
 
+    // ---- which machine, set by the ROM slot that was loaded ----------------
+    // Master System and SG-1000 come out of the same `system`: `gg` picks the
+    // Game Gear I/O map, palette and Start button, `palettemode` the fixed
+    // TMS9918 colours an SG-1000 game expects in the legacy modes.
+    input  wire        sys_gg,
+    input  wire        sys_sg,
+    output wire  [1:0] video_mode,     // 0: 160x144  1: 256x192  2: 256x224  3: 256x240
+
     // ---- settings ---------------------------------------------------------
     input  wire        ggres,          // 1 = the 160x144 Game Gear window
     input  wire        region_jp,      // 0 = export, 1 = Japan
@@ -367,6 +375,13 @@ video video_inst (
     .vblank         (vblank)
 );
 
+// The active window video.vhd will draw, from the same terms it uses to place
+// its blanking: the Game Gear window, else 192 lines, or 224 and 240 when
+// the VDP is in those modes.
+assign video_mode = ggres                  ? 2'd0 :
+                    (smode_M1 & smode_M2)  ? 2'd2 :
+                    (smode_M3 & smode_M2)  ? 2'd3 : 2'd1;
+
 // ---------------------------------------------------------------------------
 // Work RAM and backup RAM.
 // ---------------------------------------------------------------------------
@@ -484,7 +499,7 @@ system #(63) system_inst (
     .ce_sp              (ss_freeze ? 1'b0 : ce_sp),
     .turbo              (1'b0),
 
-    .gg                 (1'b1),
+    .gg                 (sys_gg),
     .ggres              (ggres),
     .systeme            (1'b0),
 
@@ -568,7 +583,7 @@ system #(63) system_inst (
     .y                  (y),
     .vcounter_cpu       (vcounter_cpu),
     .color              (color),
-    .palettemode        (1'b0),
+    .palettemode        (sys_sg),
     .mask_column        (mask_column),
     .black_column       (1'b0),
     .smode_M1           (smode_M1),

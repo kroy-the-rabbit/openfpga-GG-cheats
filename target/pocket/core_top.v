@@ -344,11 +344,9 @@ module core_top (
   // ==========================================================================
   reg [31:0] reset_delay = 0;
 
-  // A Game Gear draws 160x144 and video.json declares that one mode, so the
-  // upstream "Extended" option that opens the picture out to the whole 256x192
-  // field is not offered: it would need a second scaler mode and the APF slot
-  // word that selects between them, which is P5 work if Master System is ever
-  // in scope.
+  // The upstream "Extended" option that opens a Game Gear picture out to the
+  // whole 256x192 field is not offered; the four scaler modes video.json
+  // declares are the machines' own windows, chosen below by the slot word.
   reg region_jp = 0;  // 0 = export, 1 = Japan
   reg sp64 = 0;  // lift the 8-sprites-per-line limit
 
@@ -552,7 +550,27 @@ module core_top (
     else if (dataslot_allcomplete) any_download <= 0;
   end
 
-  wire cart_download_74 = any_download && dataslot_requestwrite_id == 16'd1;
+  // Three ROM slots, one per machine; which one APF is streaming is what
+  // sets the machine. The loaders below each answer their own address nibble
+  // and the strobes are merged, since only one slot ever streams at a time.
+  wire gg_download_74  = any_download && dataslot_requestwrite_id == 16'd1;
+  wire sms_download_74 = any_download && dataslot_requestwrite_id == 16'd4;
+  wire sg_download_74  = any_download && dataslot_requestwrite_id == 16'd5;
+  wire cart_download_74 = gg_download_74 | sms_download_74 | sg_download_74;
+
+  // 0: Game Gear  1: Master System  2: SG-1000. Latched when a slot write
+  // starts, so it is settled before the first byte reaches gg_core.
+  reg [1:0] sys_mode_74 = 2'd0;
+  always @(posedge clk_74a) begin
+    if (dataslot_requestwrite) begin
+      case (dataslot_requestwrite_id)
+        16'd4:   sys_mode_74 <= 2'd1;
+        16'd5:   sys_mode_74 <= 2'd2;
+        16'd1:   sys_mode_74 <= 2'd0;
+        default: ;
+      endcase
+    end
+  end
   wire save_download_74 = any_download && dataslot_requestwrite_id == 16'd2;
   wire cheat_download_74 = any_download && dataslot_requestwrite_id == 16'd3;
 
@@ -609,6 +627,11 @@ module core_top (
   synch_3 s_locked (pll_core_locked, pll_core_locked_s, clk_sys);
   synch_3 s_resetn (reset_n, reset_n_s, clk_sys);
   synch_3 s_dl (cart_download_74, cart_download_s, clk_sys);
+
+  wire [1:0] sys_mode_s;
+  synch_3 #(.WIDTH(2)) s_mode (sys_mode_74, sys_mode_s, clk_sys);
+  wire sys_gg_s = sys_mode_s == 2'd0;
+  wire sys_sg_s = sys_mode_s == 2'd2;
   synch_3 s_svdl (save_download_74, save_download_s, clk_sys);
   synch_3 s_chdl (cheat_download_74, cheat_download_s, clk_sys);
   synch_3 s_rstd (reset_delay > 0, reset_delay_s, clk_sys);
@@ -659,12 +682,16 @@ module core_top (
   wire [24:0] ioctl_addr;
   wire [7:0] ioctl_dout;
 
+  wire        gg_wr, sms_wr, sg_wr;
+  wire [24:0] gg_addr, sms_addr, sg_addr;
+  wire  [7:0] gg_dout, sms_dout, sg_dout;
+
   data_loader #(
       .ADDRESS_MASK_UPPER_4 (4'h1),
       .ADDRESS_SIZE         (25),
       .OUTPUT_WORD_SIZE     (1),
       .WRITE_MEM_CLOCK_DELAY(4)
-  ) rom_loader (
+  ) gg_loader (
       .clk_74a   (clk_74a),
       .clk_memory(clk_sys),
 
@@ -673,10 +700,59 @@ module core_top (
       .bridge_addr         (bridge_addr),
       .bridge_wr_data      (bridge_wr_data),
 
-      .write_en  (ioctl_wr),
-      .write_addr(ioctl_addr),
-      .write_data(ioctl_dout)
+      .write_en  (gg_wr),
+      .write_addr(gg_addr),
+      .write_data(gg_dout)
   );
+
+  data_loader #(
+      .ADDRESS_MASK_UPPER_4 (4'h3),
+      .ADDRESS_SIZE         (25),
+      .OUTPUT_WORD_SIZE     (1),
+      .WRITE_MEM_CLOCK_DELAY(4)
+  ) sms_loader (
+      .clk_74a   (clk_74a),
+      .clk_memory(clk_sys),
+
+      .bridge_wr           (bridge_wr),
+      .bridge_endian_little(bridge_endian_little),
+      .bridge_addr         (bridge_addr),
+      .bridge_wr_data      (bridge_wr_data),
+
+      .write_en  (sms_wr),
+      .write_addr(sms_addr),
+      .write_data(sms_dout)
+  );
+
+  data_loader #(
+      .ADDRESS_MASK_UPPER_4 (4'h6),
+      .ADDRESS_SIZE         (25),
+      .OUTPUT_WORD_SIZE     (1),
+      .WRITE_MEM_CLOCK_DELAY(4)
+  ) sg_loader (
+      .clk_74a   (clk_74a),
+      .clk_memory(clk_sys),
+
+      .bridge_wr           (bridge_wr),
+      .bridge_endian_little(bridge_endian_little),
+      .bridge_addr         (bridge_addr),
+      .bridge_wr_data      (bridge_wr_data),
+
+      .write_en  (sg_wr),
+      .write_addr(sg_addr),
+      .write_data(sg_dout)
+  );
+
+  // gg_core looks at ioctl_addr once more after the stream ends, to tell a
+  // headered dump from a plain one, so the merged address holds the last
+  // strobed value rather than falling back to an idle loader's.
+  wire [24:0] sel_addr = gg_wr ? gg_addr : sms_wr ? sms_addr : sg_addr;
+  reg  [24:0] held_addr = 0;
+  always @(posedge clk_sys) if (gg_wr | sms_wr | sg_wr) held_addr <= sel_addr;
+
+  assign ioctl_wr   = gg_wr | sms_wr | sg_wr;
+  assign ioctl_addr = ioctl_wr ? sel_addr : held_addr;
+  assign ioctl_dout = gg_wr ? gg_dout : sms_wr ? sms_dout : sg_dout;
 
   // ==========================================================================
   // Cheats in
@@ -877,7 +953,7 @@ module core_top (
       .reset  (~reset_n_v),
 
       .show   (cheats_osd_v),
-      .de     (de),
+      .de     (osd_de),
       .v_blank(core_vbl),
 
       .title_count(osd_titles_v),
@@ -987,6 +1063,7 @@ module core_top (
   wire ce_pix;
   wire [11:0] color;
   wire core_hs, core_vs, core_hbl, core_vbl;
+  wire [1:0] video_mode;
   wire signed [15:0] audio_l, audio_r;
 
   // ==========================================================================
@@ -1046,7 +1123,11 @@ module core_top (
 
       .joy1(joy1_gg),
 
-      .ggres    (1'b1),
+      .sys_gg    (sys_gg_s),
+      .sys_sg    (sys_sg_s),
+      .video_mode(video_mode),
+
+      .ggres    (sys_gg_s),
       .region_jp(region_jp_s),
       .sp64     (sp64_s),
 
@@ -1119,6 +1200,31 @@ module core_top (
   // ==========================================================================
   wire de = ~(core_hbl | core_vbl);
 
+  // Which of video.json's scaler modes this frame is. The mode follows the
+  // VDP's registers, which a game can change between frames; APF takes the
+  // word sent after the last line of a frame for the next one.
+  reg [1:0] vmode_v = 0, vmode_v2 = 0;
+  always @(posedge clk_vid) {vmode_v, vmode_v2} <= {vmode_v2, video_mode};
+
+  // The overlay is laid out for the 160x144 window. On the wider machines it
+  // is drawn in a window of that size in the middle of the picture, by
+  // handing it a `de` that is only true inside that window.
+  reg [8:0] hx = 0;
+  reg [8:0] vy = 0;
+  reg       de_prev_v = 0;
+  always @(posedge clk_vid) begin
+    de_prev_v <= de;
+    hx <= de ? hx + 9'd1 : 9'd0;
+    if (de_prev_v & ~de) vy <= vy + 9'd1;
+    if (core_vbl) vy <= 9'd0;
+  end
+  wire [8:0] win_x0 = (vmode_v == 2'd0) ? 9'd0 : 9'd48;
+  wire [8:0] win_y0 = (vmode_v == 2'd0) ? 9'd0 :
+                      (vmode_v == 2'd1) ? 9'd24 :
+                      (vmode_v == 2'd2) ? 9'd40 : 9'd48;
+  wire osd_de = de && hx >= win_x0 && hx < win_x0 + 9'd160
+                   && vy >= win_y0 && vy < win_y0 + 9'd144;
+
   // The VDP's colour is 4 bits per channel; the top four bits are repeated
   // into the low four so that full scale stays full scale.
   wire [7:0] vid_r = {color[3:0], color[3:0]};
@@ -1145,6 +1251,12 @@ module core_top (
       // the text stays readable on whatever the game has put up behind it.
       video_rgb_reg <= osd_active ? (osd_ink ? 24'hFFFFFF : 24'h000000)
                                   : {vid_r, vid_g, vid_b};
+    end else if (video_de_reg) begin
+      // The clock after DE falls carries APF's end-of-line word: function
+      // 000 in [2:0] is "set scaler slot", the slot in [15:13]. Zero, which
+      // every other blanked clock sends, means slot 0, so this only has to be
+      // right on the lines that matter and is sent on all of them.
+      video_rgb_reg <= {8'd0, 1'b0, vmode_v, 13'd0};
     end
 
     if (hs_delay > 0) hs_delay <= hs_delay - 3'd1;

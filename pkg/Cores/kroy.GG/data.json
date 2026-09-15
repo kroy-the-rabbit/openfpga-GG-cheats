@@ -3,14 +3,36 @@
     "magic": "APF_VER_1",
     "data_slots": [
       {
-        "name": "Cartridge",
+        "name": "Game Gear",
         "id": 1,
-        "required": true,
+        "required": false,
         "parameters": "0x109",
         "extensions": [
           "gg"
         ],
         "address": "0x10000000",
+        "size_maximum": "0x400000"
+      },
+      {
+        "name": "Master System",
+        "id": 4,
+        "required": false,
+        "parameters": "0x109",
+        "extensions": [
+          "sms"
+        ],
+        "address": "0x30000000",
+        "size_maximum": "0x400000"
+      },
+      {
+        "name": "SG-1000",
+        "id": 5,
+        "required": false,
+        "parameters": "0x109",
+        "extensions": [
+          "sg"
+        ],
+        "address": "0x60000000",
         "size_maximum": "0x400000"
       },
       {

@@ -19,7 +19,7 @@
 #   make compare A=gg B=baseline   resource and timing delta between two builds
 #   make flash                  merge build/gg/dist onto the mounted Pocket card
 #   make icon                   render assets/icon.svg -> pkg/Cores/kroy.GG/icon.bin
-#   make platform               render assets/platform.svg -> pkg/Platforms/_images/gg.bin
+#   make platform               render assets/platform-*.svg -> pkg/Platforms/_images/*.bin
 #   make clean                  remove build/
 #
 # Release builds run on controlled builders. CI builds nothing:
@@ -80,8 +80,10 @@ icon:
 
 platform:
 	[ -x $(VENV)/bin/python3 ] || (python3 -m venv $(VENV) && $(VENV)/bin/pip -q install pillow)
-	magick +antialias -background white assets/platform.svg -colorspace Gray -depth 8 build/gg/platform.png
-	$(VENV)/bin/python3 tools/icon/genplatform.py build/gg/platform.png pkg/Platforms/_images/gg.bin
+	for p in gg sms sg1000; do \
+	  magick +antialias -background white assets/platform-$$p.svg -colorspace Gray -depth 8 build/gg/platform-$$p.png && \
+	  $(VENV)/bin/python3 tools/icon/genplatform.py build/gg/platform-$$p.png pkg/Platforms/_images/$$p.bin || exit 1; \
+	done
 
 shell:
 	$(PODMAN) run --rm -it --userns=keep-id --security-opt label=disable \

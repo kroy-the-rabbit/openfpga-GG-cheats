@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!--
+  SG-1000 platform image, 521x165, in the same three-quarter view as the
+  Game Gear one: console units through matrix(0.9 -0.45 0.9 0.45 70 95),
+  thickness as the outline repeated one pixel lower, drawn first.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 521 165" width="521" height="165"
+     shape-rendering="crispEdges">
+  <rect width="521" height="165" fill="#ffffff"/>
+  <g transform="translate(0,12)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="120" height="80" rx="6" fill="#000000"/><rect x="1.5" y="1.5" width="117" height="77" rx="5" fill="#9a9a9a"/></g></g>
+  <g transform="translate(0,11)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="120" height="80" rx="6" fill="#000000"/><rect x="1.5" y="1.5" width="117" height="77" rx="5" fill="#9a9a9a"/></g></g>
+  <g transform="translate(0,10)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="120" height="80" rx="6" fill="#000000"/><rect x="1.5" y="1.5" width="117" height="77" rx="5" fill="#9a9a9a"/></g></g>
+  <g transform="translate(0,9)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="120" height="80" rx="6" fill="#000000"/><rect x="1.5" y="1.5" width="117" height="77" rx="5" fill="#9a9a9a"/></g></g>
+  <g transform="translate(0,8)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="120" height="80" rx="6" fill="#000000"/><rect x="1.5" y="1.5" width="117" height="77" rx="5" fill="#9a9a9a"/></g></g>
+  <g transform="translate(0,7)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="120" height="80" rx="6" fill="#000000"/><rect x="1.5" y="1.5" width="117" height="77" rx="5" fill="#9a9a9a"/></g></g>
+  <g transform="translate(0,6)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="120" height="80" rx="6" fill="#000000"/><rect x="1.5" y="1.5" width="117" height="77" rx="5" fill="#9a9a9a"/></g></g>
+  <g transform="translate(0,5)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="120" height="80" rx="6" fill="#000000"/><rect x="1.5" y="1.5" width="117" height="77" rx="5" fill="#9a9a9a"/></g></g>
+  <g transform="translate(0,4)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="120" height="80" rx="6" fill="#000000"/><rect x="1.5" y="1.5" width="117" height="77" rx="5" fill="#9a9a9a"/></g></g>
+  <g transform="translate(0,3)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="120" height="80" rx="6" fill="#000000"/><rect x="1.5" y="1.5" width="117" height="77" rx="5" fill="#9a9a9a"/></g></g>
+  <g transform="translate(0,2)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="120" height="80" rx="6" fill="#000000"/><rect x="1.5" y="1.5" width="117" height="77" rx="5" fill="#9a9a9a"/></g></g>
+  <g transform="translate(0,1)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="120" height="80" rx="6" fill="#000000"/><rect x="1.5" y="1.5" width="117" height="77" rx="5" fill="#9a9a9a"/></g></g>
+  <g transform="matrix(0.9 -0.45 0.9 0.45 70 95)">
+    <rect x="0" y="0" width="120" height="80" rx="6" fill="#000000"/>
+    <rect x="1.5" y="1.5" width="117" height="77" rx="5" fill="#c8c8c8"/>
+    <rect x="4" y="3" width="112" height="1.5" fill="#ffffff"/>
+    <!-- cartridge slot -->
+    <rect x="34" y="12" width="52" height="30" rx="2" fill="#000000"/>
+    <rect x="36" y="14" width="48" height="26" rx="2" fill="#9a9a9a"/>
+    <rect x="41" y="24" width="38" height="5" fill="#000000"/>
+    <!-- the darker band along the front -->
+    <rect x="4" y="54" width="112" height="22" rx="3" fill="#4a4a4a"/>
+    <!-- power switch and the pause button -->
+    <rect x="12" y="60" width="16" height="9" rx="2" fill="#000000"/>
+    <circle cx="98" cy="65" r="5" fill="#000000"/>
+    <circle cx="98" cy="65" r="3" fill="#9a9a9a"/>
+    <!-- joystick cable leaving the left side -->
+  </g>
+  <polygon points="66,110 60,118 40,126 22,140 18,146 24,146 32,134 48,124 66,116" fill="#000000"/>
+</svg>

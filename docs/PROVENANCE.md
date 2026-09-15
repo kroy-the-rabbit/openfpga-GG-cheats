@@ -83,8 +83,8 @@ ImageMagick and `tools/icon/genicon.py` into `pkg/Cores/kroy.GG/icon.bin`:
 column major. The order was confirmed against shipped third-party icons on
 2026-09-14; a row-major file shows transposed on the Pocket.
 
-`assets/platform.svg` is this project's too. `make platform` renders it into
-`pkg/Platforms/_images/gg.bin`: 521x165, one little-endian 16-bit word per
+`assets/platform-gg.svg`, `platform-sms.svg` and `platform-sg1000.svg` are
+this project's too. `make platform` renders them into `pkg/Platforms/_images/`: 521x165, one little-endian 16-bit word per
 pixel, the low byte is 255 minus the grey level, stored column major with the
 columns reversed. That format was read back from a community image sitting
 beside its PNG source on the card. No third-party image is shipped.

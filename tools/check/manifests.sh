@@ -119,9 +119,13 @@ VID_JSON="$CORE_DIR/video.json"
 if [[ -f "$VID_JSON" ]]; then
   n=$(jq -r '.video.scaler_modes | length' "$VID_JSON")
   [[ "$n" -ge 1 ]] || fail "video.json declares no scaler modes"
-  # This core drives no APF slot-select word, so a second mode could never be
-  # reached. See target/pocket/core_top.v, the video section.
-  [[ "$n" -le 1 ]] || fail "video.json declares $n scaler modes but core_top.v selects none"
+  # More than one mode is only reachable if core_top.v sends APF's end-of-line
+  # slot word; gg_core's video_mode is what it sends.
+  if [[ "$n" -gt 1 ]]; then
+    grep -q 'vmode_v, 13' target/pocket/core_top.v \
+      || fail "video.json declares $n scaler modes but core_top.v sends no slot word"
+    [[ "$n" -le 8 ]] || fail "video.json declares $n scaler modes; APF has slots 0 to 7"
+  fi
 fi
 
 # ---- every file core.json names, other than the built bitstream -------------

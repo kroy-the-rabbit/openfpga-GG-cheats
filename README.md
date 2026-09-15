@@ -62,7 +62,7 @@ rather than a technical one; nothing here is built for them yet.
     make dist      package a flashable core -> build/gg/dist/
     make report    re-read an existing build's utilisation and slack
     make icon      render assets/icon.svg into the core icon
-    make platform  render assets/platform.svg into the platform image
+    make platform  render assets/platform-*.svg into the platform images
 
 Releases are built from the tagged commit on a controlled builder with Quartus
 Prime Lite 25.1std. No Quartus runs on GitHub; the release workflow only checks

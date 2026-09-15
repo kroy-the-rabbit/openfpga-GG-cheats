@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!--
+  Master System platform image, 521x165, in the same three-quarter view as the
+  Game Gear one: console units through matrix(0.9 -0.45 0.9 0.45 70 95),
+  thickness as the outline repeated one pixel lower, drawn first.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 521 165" width="521" height="165"
+     shape-rendering="crispEdges">
+  <rect width="521" height="165" fill="#ffffff"/>
+  <g transform="translate(0,14)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="90" rx="4" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="87" rx="3" fill="#202020"/></g></g>
+  <g transform="translate(0,13)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="90" rx="4" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="87" rx="3" fill="#202020"/></g></g>
+  <g transform="translate(0,12)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="90" rx="4" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="87" rx="3" fill="#202020"/></g></g>
+  <g transform="translate(0,11)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="90" rx="4" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="87" rx="3" fill="#202020"/></g></g>
+  <g transform="translate(0,10)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="90" rx="4" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="87" rx="3" fill="#202020"/></g></g>
+  <g transform="translate(0,9)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="90" rx="4" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="87" rx="3" fill="#202020"/></g></g>
+  <g transform="translate(0,8)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="90" rx="4" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="87" rx="3" fill="#202020"/></g></g>
+  <g transform="translate(0,7)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="90" rx="4" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="87" rx="3" fill="#202020"/></g></g>
+  <g transform="translate(0,6)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="90" rx="4" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="87" rx="3" fill="#202020"/></g></g>
+  <g transform="translate(0,5)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="90" rx="4" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="87" rx="3" fill="#202020"/></g></g>
+  <g transform="translate(0,4)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="90" rx="4" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="87" rx="3" fill="#202020"/></g></g>
+  <g transform="translate(0,3)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="90" rx="4" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="87" rx="3" fill="#202020"/></g></g>
+  <g transform="translate(0,2)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="90" rx="4" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="87" rx="3" fill="#202020"/></g></g>
+  <g transform="translate(0,1)"><g transform="matrix(0.9 -0.45 0.9 0.45 70 95)"><rect x="0" y="0" width="150" height="90" rx="4" fill="#000000"/><rect x="1.5" y="1.5" width="147" height="87" rx="3" fill="#202020"/></g></g>
+  <g transform="matrix(0.9 -0.45 0.9 0.45 70 95)">
+    <rect x="0" y="0" width="150" height="90" rx="4" fill="#000000"/>
+    <rect x="1.5" y="1.5" width="147" height="87" rx="3" fill="#303030"/>
+    <!-- the lighter top panel with the ridge along the back -->
+    <rect x="6" y="6" width="138" height="52" rx="2" fill="#4a4a4a"/>
+    <rect x="6" y="6" width="138" height="2" fill="#9a9a9a"/>
+    <!-- cartridge slot, raised block with the opening -->
+    <rect x="34" y="10" width="62" height="22" rx="2" fill="#000000"/>
+    <rect x="36" y="12" width="58" height="18" rx="2" fill="#4a4a4a"/>
+    <rect x="40" y="18" width="50" height="5" fill="#000000"/>
+    <!-- the diagonal stripe across the front -->
+    <polygon points="6,64 144,64 144,70 6,70" fill="#9a9a9a"/>
+    <polygon points="98,58 144,58 144,64 106,64" fill="#c8c8c8"/>
+    <!-- card slot on the front lip -->
+    <rect x="16" y="76" width="44" height="4" fill="#000000"/>
+    <!-- power and reset -->
+    <rect x="112" y="74" width="12" height="7" rx="1" fill="#000000"/>
+    <rect x="128" y="74" width="12" height="7" rx="1" fill="#000000"/>
+    <!-- power light -->
+    <rect x="102" y="76" width="4" height="3" fill="#c8c8c8"/>
+  </g>
+</svg>
