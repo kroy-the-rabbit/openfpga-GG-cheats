@@ -15,8 +15,7 @@ cheat engine.
 
 ## Status
 
-Release `v0.9999.20260913` packages build `edc23d4`. Tested source is
-`440ccc6`: it boots the EEPROM titles that hang on `edc23d4`, adds save
+Release `v0.9999.20260915` packages tested build `440ccc6`: it boots the EEPROM titles that hang on `edc23d4`, adds save
 states, sleep, FM sound and cartridge play, and runs Master System titles at
 their own resolutions. Game Gear and Master System ROMs, video, audio,
 controls, both kinds of save, save states, sleep, FM sound, both cheat
@@ -35,7 +34,7 @@ hardware. SG-1000 boots Flicky, The Castle and Zaxxon. The build uses
 | Save states and sleep | Menu save and load, sleep and wake, tested on Pocket; MiSTer's engine behind APF |
 | Master System at 192, 224 and 240 lines | 192 tested (Phantasy Star, Ys); 224 and 240 untested |
 | SG-1000 | Flicky, The Castle and Zaxxon boot; The Castle's 32 KB cart RAM is written back, reload untested |
-| FM sound (YM2413) | OutRun switches between FM and PSG on the Pocket; output averaged per 48 kHz frame |
+| FM sound (YM2413) | OutRun switches between FM and PSG on the Pocket; output averaged over a 1024-cycle window |
 | Game Gear cartridges through Analogue's adapter | Sonic 2, Arch Rivals and World Series Baseball (an EEPROM cart) play from the cartridge, cheats included; saves not kept yet |
 
 Merge a release package's `Assets`, `Cores` and `Platforms` into the SD
