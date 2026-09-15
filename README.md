@@ -1,17 +1,10 @@
 # Game Gear, Master System and SG-1000 for Analogue Pocket, with cheats
 
-A Pocket core for the Sega Game Gear, Master System and SG-1000, ported by
-hand from
-[MiSTer-devel/SMS_MiSTer](https://github.com/MiSTer-devel/SMS_MiSTer), with a
-cheat engine, SD-ROM loading and battery saves. One bitstream ships as three
-packages, `kroy.GG`, `kroy.SMS` and `kroy.SG1000`, one per platform. The
-Game Gear package plays cartridges through Analogue's Game Gear adapter.
-
-**Based on SMS_MiSTer by Sorgelig**, which is a port of Ben's Sega Master
-System for the Papilio, with the T80, jt89, VM2413 and the VDP by their
-respective authors, all credited in the file headers under `rtl/upstream/`.
-Everything that will run here is theirs apart from the Pocket glue and the
-cheat engine.
+Game Gear, Master System and SG-1000 on the Analogue Pocket, with cheats,
+SD-ROM loading, battery saves, save states, sleep and FM sound. Install the
+platforms you want as `kroy.GG`, `kroy.SMS` and `kroy.SG1000`.
+The Game Gear package also plays tested cartridges through Analogue's adapter;
+cartridge saves are not kept yet.
 
 ## Status
 
@@ -100,3 +93,11 @@ Versions use `0.9999.YYYYMMDD`, where the date is UTC. Release tags add `v`,
 for example `v0.9999.20260913`. Each project releases independently.
 The source commit and bitstream checksums are recorded in build provenance.
 A published date is not reused for a different build.
+
+## Credits
+
+Ported by hand from [SMS_MiSTer](https://github.com/MiSTer-devel/SMS_MiSTer)
+by Sorgelig, based on Ben's Sega Master System for the Papilio. T80, jt89,
+VM2413 and the VDP are credited to their respective authors in the preserved
+headers under `rtl/upstream/`. The Pocket integration and cheat engine are
+this project's additions. See [provenance](docs/PROVENANCE.md).
