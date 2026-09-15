@@ -1015,6 +1015,7 @@ module core_top (
       .savestate_load_err  (savestate_load_err),
 
       .bridge_wr           (bridge_wr),
+      .bridge_rd           (bridge_rd),
       .bridge_endian_little(bridge_endian_little),
       .bridge_addr         (bridge_addr),
       .bridge_wr_data      (bridge_wr_data),

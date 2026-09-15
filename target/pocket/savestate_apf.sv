@@ -28,10 +28,13 @@
 // ss_freeze rises, then wait for it to fall, and report ok when the header
 // was written (save) or the Z80 was restored (load), err otherwise.
 //
-// The bridge window is read the way the APF host reads it: the address
-// free-runs, the host samples bridge_rd_data a few clocks after presenting
-// the address, so the data here comes straight out of the RAM two clocks
-// after bridge_addr with no strobe in the path.
+// The bridge window is read the way the APF host reads it, as measured in
+// pocket-cartridge: the address free-runs into the RAM, the reply is latched
+// on bridge_rd and held, and the value the host keeps for a word is the one
+// held during the transaction after it. A window that just follows the
+// address hands every word back one transaction early, which is how the
+// first build of this failed: the file was shifted a word and the engine
+// refused its header on load.
 //
 
 `default_nettype none
@@ -55,6 +58,7 @@ module savestate_apf (
 
     // ---- bridge window 0x4xxxxxxx, clk_74a --------------------------------
     input  wire        bridge_wr,
+    input  wire        bridge_rd,
     input  wire        bridge_endian_little,
     input  wire [31:0] bridge_addr,
     input  wire [31:0] bridge_wr_data,
@@ -132,17 +136,16 @@ always @(posedge clk_sys) begin
 end
 
 // ---------------------------------------------------------------------------
-// The bridge's side. Reads: address in, word out two clocks later, byte
+// The bridge's side. The RAM follows bridge_addr, so by the time bridge_rd
+// arrives its output is the addressed word; that is latched and held. Byte
 // order as the host asked for it, the same convention data_unloader.sv
 // uses. Writes went in above.
 // ---------------------------------------------------------------------------
-reg b_hi_d = 0;
+wire [31:0] b_q = b_hi ? b_q_hi : b_q_lo;
 always @(posedge clk_74a) begin
-    b_hi_d <= b_hi;
-    bridge_rd_data <= bridge_endian_little
-        ? (b_hi_d ? b_q_hi : b_q_lo)
-        : (b_hi_d ? {b_q_hi[7:0], b_q_hi[15:8], b_q_hi[23:16], b_q_hi[31:24]}
-                  : {b_q_lo[7:0], b_q_lo[15:8], b_q_lo[23:16], b_q_lo[31:24]});
+    if (bridge_rd)
+        bridge_rd_data <= bridge_endian_little ? b_q
+                        : {b_q[7:0], b_q[15:8], b_q[23:16], b_q[31:24]};
 end
 
 // ---------------------------------------------------------------------------
