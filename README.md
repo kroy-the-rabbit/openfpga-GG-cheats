@@ -36,7 +36,7 @@ category.
 | Master System at 192, 224 and 240 lines | 192 tested (Phantasy Star, Ys); 224 and 240 untested |
 | SG-1000 | Flicky, The Castle and Zaxxon boot; The Castle's 32 KB cart RAM is written back, reload untested |
 | FM sound (YM2413) | OutRun switches between FM and PSG on the Pocket; output averaged per 48 kHz frame |
-| Game Gear cartridges through Analogue's adapter | Sonic 2, Arch Rivals and World Series Baseball (an EEPROM cart) play from the cartridge, cheats included |
+| Game Gear cartridges through Analogue's adapter | Sonic 2, Arch Rivals and World Series Baseball (an EEPROM cart) play from the cartridge, cheats included; saves not kept yet |
 
 Merge a release package's `Assets`, `Cores` and `Platforms` into the SD
 root; the three packages are independent, so install only the platforms you
@@ -48,9 +48,10 @@ core menu. The cheat and overlay switches start off and are not persisted.
 **Play Cartridge** in the Game Gear entry, with Analogue's Game Gear
 adapter fitted, reads the cartridge through the adapter and then runs it as
 if it had come from the card: the cartridge's own mapper is used only to get
-the bytes out, up to the 512 KB the mapper can address, about a second. Cart RAM and EEPROM saves
-go to the Pocket's save file for the cartridge slot, not back to the
-cartridge. `CG:`, `CS:` and `CR:` in the menu are the adapter report, the read
+the bytes out, up to the 512 KB the mapper can address, about a second.
+Saves made while playing a cartridge are not kept yet: nothing is written
+back to the cartridge, and the Pocket writes no save file for a core started
+without a ROM slot. `CG:`, `CS:` and `CR:` in the menu are the adapter report, the read
 state and the CRC32 of what was read, for when nothing appears.
 **FM sound** in the core menu is the YM2413 and starts on. A game asks for
 the chip through port $F2 when it boots, so the switch takes effect at the
