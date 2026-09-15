@@ -55,8 +55,12 @@ module audio_frame_avg #(
     end
   end
 
-  wire signed [42:0] scaled_l = sum_l * 16'sd14990;
-  wire signed [42:0] scaled_r = sum_r * 16'sd14990;
+  // In logic, not a DSP block. Quartus packs the sum register into the DSP
+  // block's input stage when it can, and that stage's clock arrives 0.65 ns
+  // after the fabric flops feeding it, which is more than the data path:
+  // a hold violation of 20 ps at the slow cold corner, on every seed.
+  (* multstyle = "logic" *) wire signed [42:0] scaled_l = sum_l * 16'sd14990;
+  (* multstyle = "logic" *) wire signed [42:0] scaled_r = sum_r * 16'sd14990;
 
   always @(posedge clk) begin
     if (dump) begin

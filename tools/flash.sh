@@ -61,8 +61,21 @@ fi
   echo "Build on a runner and fetch it, or run 'make dist BUILD_NAME=$NAME'." >&2
   exit 1; }
 
-if [[ -f "$REPO/build/$NAME/TIMING_FAILED" && -z "${FLASH_ANYWAY:-}" ]]; then
-  echo "build/$NAME missed timing and is not fit to flash." >&2
+# The marker is what report.sh leaves beside a local build. A build fetched
+# from a runner brings report.txt and nothing else, so the report's own
+# worst-slack table is read as well: one negative number in it is a miss.
+# The 0x00B1 cartridge build of 2026-09-15 reached the card with hold at
+# -0.020 ns because only the marker was checked.
+timing_miss=""
+[[ -f "$REPO/build/$NAME/TIMING_FAILED" ]] && timing_miss="marker"
+if [[ -f "$REPO/build/$NAME/report.txt" ]]; then
+  neg="$(sed -n '/^---- worst slack/,/^----/p' "$REPO/build/$NAME/report.txt" \
+        | awk '$2 ~ /^-[0-9]/ || $3 ~ /^-[0-9]/ || $4 ~ /^-[0-9]/' | head -3)"
+  [[ -z "$neg" ]] || timing_miss="report"
+fi
+if [[ -n "$timing_miss" && -z "${FLASH_ANYWAY:-}" ]]; then
+  echo "build/$NAME missed timing ($timing_miss) and is not fit to flash." >&2
+  [[ -z "${neg:-}" ]] || printf '  %s\n' "$neg" >&2
   echo "FLASH_ANYWAY=1 overrides, and then it is on you." >&2
   exit 1
 fi
