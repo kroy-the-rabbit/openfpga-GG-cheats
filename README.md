@@ -30,7 +30,7 @@ category.
 | SD ROMs, video, audio and controls | Tested on Pocket, Game Gear and Master System |
 | Battery saves | Eternal Legend, Phantasy Star and Ys saved and loaded after a power cycle |
 | 93C46 EEPROM saves | World Series Baseball '95 saved and loaded after a power cycle |
-| Game Genie ROM patches and Pro Action Replay RAM writes | Tested on Pocket |
+| Game Genie ROM patches and Pro Action Replay RAM writes | Tested on Pocket, Game Gear and Master System (OutRun's timer) |
 | `.cht`, `.chtbin` and named overlay | Tested, including switching cheat files |
 | Save states and sleep | Menu save and load, sleep and wake, tested on Pocket; MiSTer's engine behind APF |
 | Master System at 192, 224 and 240 lines | 192 tested (Phantasy Star, Ys); 224 and 240 untested |
