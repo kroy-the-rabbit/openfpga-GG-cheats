@@ -52,22 +52,8 @@ REV="${REV:-gg_pocket}"
 
 RBF="$ROOT/build/$NAME/work/projects/output_files/$REV.rbf"
 OUT="$ROOT/build/$NAME/dist"
-CORE_DIR="$(cd "$ROOT/pkg/Cores" && ls -d */ | head -1)"
-CORE_DIR="${CORE_DIR%/}"
-CORE_JSON="$ROOT/pkg/Cores/$CORE_DIR/core.json"
 
 [ -f "$RBF" ] || { echo "no bitstream at $RBF; run 'make gg BUILD_NAME=$NAME' first" >&2; exit 1; }
-
-# perl, not jq: the image has no jq, and perl is already a hard dependency
-# below for the bit reversal. Reading two fields with a regex is only safe
-# because this JSON is ours; tools/check/manifests.sh is what actually
-# validates it, and that runs where jq exists.
-BITNAME="$(perl -0777 -ne '
-  exit unless /"cores"\s*:\s*\[(.*?)\]/s;
-  my $cores = $1;
-  print $1 if $cores =~ /"filename"\s*:\s*"([^"]*)"/;
-' "$CORE_JSON")"
-[ -n "$BITNAME" ] || { echo "core.json does not name a bitstream" >&2; exit 1; }
 
 rm -rf "$OUT"
 mkdir -p "$OUT"
@@ -76,30 +62,58 @@ cp -r "$ROOT/pkg/." "$OUT/"
 # business on an SD card or in a release archive.
 find "$OUT" -name .gitkeep -delete
 
+# One bitstream, one package per platform. The Pocket only delivers a ROM
+# slot before the core starts when the slot is required, and a package can
+# carry only one required ROM slot, so each platform gets its own Cores/
+# directory around the same bitstream, as drizzt's openfpga-SMS does. The
+# bit-reversed image is made once and copied.
+#
 # unpack 'b*' reads each byte LSB-first, pack 'B*' writes it MSB-first, so the
 # round trip is exactly a per-byte bit reversal. Byte order is unchanged.
+REVERSED="$(mktemp)"
 perl -e 'binmode STDIN; binmode STDOUT; local $/; my $d = <STDIN>; print pack("B*", unpack("b*", $d));' \
-     < "$RBF" > "$OUT/Cores/$CORE_DIR/$BITNAME"
+     < "$RBF" > "$REVERSED"
 
 echo "== dist $OUT"
-echo "   core      $CORE_DIR"
-echo "   bitstream $BITNAME, $(stat -c%s "$OUT/Cores/$CORE_DIR/$BITNAME") bytes (from $REV.rbf, $(stat -c%s "$RBF") bytes)"
+for CORE_PATH in "$OUT"/Cores/*/; do
+  CORE_DIR="$(basename "$CORE_PATH")"
+  CORE_JSON="$CORE_PATH/core.json"
+
+  # perl, not jq: the image has no jq, and perl is already a hard dependency
+  # above for the bit reversal. Reading fields with a regex is only safe
+  # because this JSON is ours; tools/check/manifests.sh is what actually
+  # validates it, and that runs where jq exists.
+  BITNAME="$(perl -0777 -ne '
+    exit unless /"cores"\s*:\s*\[(.*?)\]/s;
+    my $cores = $1;
+    print $1 if $cores =~ /"filename"\s*:\s*"([^"]*)"/;
+  ' "$CORE_JSON")"
+  [ -n "$BITNAME" ] || { echo "$CORE_DIR/core.json does not name a bitstream" >&2; exit 1; }
+  PID="$(perl -0777 -ne 'print $1 if /"platform_ids"\s*:\s*\[\s*"([^"]*)"/' "$CORE_JSON")"
+  [ -n "$PID" ] || { echo "$CORE_DIR/core.json names no platform" >&2; exit 1; }
+
+  cp "$REVERSED" "$CORE_PATH/$BITNAME"
+
+  # Stamp the package; the checked-in manifest remains a template.
+  tmp="$(mktemp)"
+  V="$VERSION" D="$(pocket_version_date "$VERSION")" perl -0777 -pe '
+    s/("version"\s*:\s*)"[^"]*"/$1"$ENV{V}"/;
+    s/("date_release"\s*:\s*)"[^"]*"/$1"$ENV{D}"/;
+  ' "$CORE_JSON" > "$tmp"
+  mv "$tmp" "$CORE_JSON"
+
+  # Release archive, laid out so it unzips straight onto the SD card root:
+  # this core, its platform entry and image, and the Assets directory the
+  # ROMs live in. Named after the core and its version.
+  ZIP="$ROOT/build/$NAME/${CORE_DIR// /_}_${VERSION}.zip"
+  rm -f "$ZIP"
+  (cd "$OUT" && zip -qr "$ZIP" "Cores/$CORE_DIR" "Platforms/$PID.json" "Platforms/_images/$PID.bin" "Assets/$PID")
+
+  echo "   core      $CORE_DIR ($PID)"
+  echo "   bitstream $BITNAME, $(stat -c%s "$CORE_PATH/$BITNAME") bytes (from $REV.rbf, $(stat -c%s "$RBF") bytes)"
+  echo "   release   $ZIP ($(stat -c%s "$ZIP") bytes)"
+done
+rm -f "$REVERSED"
+echo "   stamped   version=$VERSION"
 echo
 echo "   Copy the contents of $OUT onto the Pocket's SD card root."
-
-
-# Stamp the package; the checked-in manifest remains a template.
-tmp="$(mktemp)"
-V="$VERSION" D="$(pocket_version_date "$VERSION")" perl -0777 -pe '
-  s/("version"\s*:\s*)"[^"]*"/$1"$ENV{V}"/;
-  s/("date_release"\s*:\s*)"[^"]*"/$1"$ENV{D}"/;
-' "$OUT/Cores/$CORE_DIR/core.json" > "$tmp"
-mv "$tmp" "$OUT/Cores/$CORE_DIR/core.json"
-echo "   stamped   version=$VERSION"
-
-# Release archive, laid out so it unzips straight onto the SD card root. Named
-# after the core and its version, matching the sibling forks.
-ZIP="$ROOT/build/$NAME/${CORE_DIR// /_}_${VERSION}.zip"
-rm -f "$ZIP"
-(cd "$OUT" && zip -qr "$ZIP" .)
-echo "   release   $ZIP ($(stat -c%s "$ZIP") bytes)"

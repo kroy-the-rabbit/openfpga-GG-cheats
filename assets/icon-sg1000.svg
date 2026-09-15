@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!--
+  SG-1000 core icon.
+
+  An SG-1000 cartridge with a tick on the label, the same idea as
+  icon-gg.svg: the cartridge says which system, the tick says cheats. The
+  SG-1000 cart is tall and narrow with square shoulders, grooves down both
+  sides and a small label near the top. The Pocket draws icons in
+  greyscale, so colour only sets brightness.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"
+     role="img" aria-label="SG-1000 cheats">
+  <title>SG-1000 cheats</title>
+
+  <!-- body: tall slab with square shoulders -->
+  <path d="M16 4h32v12h4v42H12V16h4z" fill="#5a6068"/>
+
+  <!-- side grooves -->
+  <rect x="14" y="22" width="3" height="28" fill="#3b4048"/>
+  <rect x="47" y="22" width="3" height="28" fill="#3b4048"/>
+
+  <!-- label -->
+  <rect x="20" y="10" width="24" height="34" rx="2" fill="#c8ccd2"/>
+
+  <!-- the tick -->
+  <path d="M24 28l6 6l12-14" fill="none" stroke="#1c1f24"
+        stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- edge connector -->
+  <rect x="18" y="58" width="28" height="4" fill="#23272d"/>
+  <rect x="22" y="58" width="3" height="4" fill="#8a9098"/>
+  <rect x="30" y="58" width="3" height="4" fill="#8a9098"/>
+  <rect x="38" y="58" width="3" height="4" fill="#8a9098"/>
+</svg>

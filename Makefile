@@ -18,7 +18,7 @@
 #   make shell                  interactive shell in the Quartus container
 #   make compare A=gg B=baseline   resource and timing delta between two builds
 #   make flash                  merge build/gg/dist onto the mounted Pocket card
-#   make icon                   render assets/icon.svg -> pkg/Cores/kroy.GG/icon.bin
+#   make icon                   render assets/icon-*.svg -> pkg/Cores/kroy.*/icon.bin
 #   make platform               render assets/platform-*.svg -> pkg/Platforms/_images/*.bin
 #   make clean                  remove build/
 #
@@ -75,8 +75,11 @@ flash:
 VENV ?= build/gg/venv
 icon:
 	[ -x $(VENV)/bin/python3 ] || (python3 -m venv $(VENV) && $(VENV)/bin/pip -q install pillow)
-	magick -background none -density 576 assets/icon.svg -resize 288x288 build/gg/icon.png
-	$(VENV)/bin/python3 tools/icon/genicon.py build/gg/icon.png pkg/Cores/kroy.GG/icon.bin
+	for p in gg sms sg1000; do \
+	  c=$$(echo $$p | tr a-z A-Z) && \
+	  magick -background none -density 576 assets/icon-$$p.svg -resize 288x288 build/gg/icon-$$p.png && \
+	  $(VENV)/bin/python3 tools/icon/genicon.py build/gg/icon-$$p.png pkg/Cores/kroy.$$c/icon.bin || exit 1; \
+	done
 
 platform:
 	[ -x $(VENV)/bin/python3 ] || (python3 -m venv $(VENV) && $(VENV)/bin/pip -q install pillow)

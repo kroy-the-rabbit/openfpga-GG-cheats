@@ -1,0 +1,121 @@
+{
+  "interact": {
+    "magic": "APF_VER_1",
+    "variables": [
+      {
+        "name": "Cheats",
+        "id": 20,
+        "type": "check",
+        "enabled": true,
+        "address": "0xF0000108",
+        "persist": false,
+        "writeonly": true,
+        "mask": "0xFFFFFFFE",
+        "defaultval": "0x00000000",
+        "value": "0x00000001"
+      },
+      {
+        "name": "Cheat overlay",
+        "id": 21,
+        "type": "check",
+        "enabled": true,
+        "address": "0xF000010C",
+        "persist": false,
+        "writeonly": true,
+        "mask": "0xFFFFFFFE",
+        "defaultval": "0x00000000",
+        "value": "0x00000001"
+      },
+      {
+        "name": "Reset core",
+        "id": 1,
+        "type": "action",
+        "enabled": true,
+        "address": "0xF0000000",
+        "value": 1
+      },
+      {
+        "name": "Region",
+        "id": 10,
+        "type": "list",
+        "enabled": true,
+        "address": "0xF0000100",
+        "persist": true,
+        "writeonly": true,
+        "defaultval": 0,
+        "options": [
+          {
+            "name": "Export",
+            "value": 0
+          },
+          {
+            "name": "Japan",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "name": "Extra sprites",
+        "id": 11,
+        "type": "check",
+        "enabled": true,
+        "address": "0xF0000104",
+        "persist": true,
+        "writeonly": true,
+        "mask": "0xFFFFFFFE",
+        "defaultval": "0x00000000",
+        "value": "0x00000001"
+      },
+      {
+        "name": "RQ:",
+        "id": 90,
+        "type": "number_u32",
+        "enabled": true,
+        "address": "0xF0000200"
+      },
+      {
+        "name": "CC:",
+        "id": 91,
+        "type": "number_u32",
+        "enabled": true,
+        "address": "0xF0000204"
+      },
+      {
+        "name": "CD:",
+        "id": 92,
+        "type": "number_u32",
+        "enabled": true,
+        "address": "0xF0000208"
+      },
+      {
+        "name": "CB:",
+        "id": 93,
+        "type": "number_u32",
+        "enabled": true,
+        "address": "0xF000020C"
+      },
+      {
+        "name": "CX:",
+        "id": 94,
+        "type": "number_u32",
+        "enabled": true,
+        "address": "0xF0000210"
+      },
+      {
+        "name": "CF:",
+        "id": 95,
+        "type": "number_u32",
+        "enabled": true,
+        "address": "0xF0000214"
+      },
+      {
+        "name": "CT:",
+        "id": 96,
+        "type": "number_u32",
+        "enabled": true,
+        "address": "0xF0000218"
+      }
+    ],
+    "messages": []
+  }
+}

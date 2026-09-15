@@ -36,17 +36,24 @@ SD="${1:-$(findmnt -rn -o TARGET | grep -E "^/run/media/$USER/" | head -1 || tru
 # A zip newer than the dist tree replaces it. The first P1 flash did not do
 # this: a dist tree left over from P0 sat beside the freshly fetched P1 zip,
 # the zip was never opened, and the card got P0 again while every doc said P1.
+#
+# dist.sh writes one zip per platform package around the same bitstream, so
+# several zips are the normal case; they must all carry one version, or one
+# of them is a leftover from another build.
+shopt -s nullglob
 zips=("$REPO/build/$NAME"/*.zip)
-if [[ -f "${zips[0]}" && ( ! -d "$SRC" || "${zips[0]}" -nt "$SRC" ) ]]; then
-  [[ ${#zips[@]} -eq 1 ]] || {
-    echo "more than one zip in build/$NAME; unpack the one you want to $SRC" >&2
+shopt -u nullglob
+if [[ ${#zips[@]} -gt 0 && ( ! -d "$SRC" || "${zips[0]}" -nt "$SRC" ) ]]; then
+  versions="$(for z in "${zips[@]}"; do basename "$z" .zip | sed 's/.*_//'; done | sort -u)"
+  [[ $(wc -l <<<"$versions") -eq 1 ]] || {
+    echo "zips of more than one version in build/$NAME; move the stale ones aside" >&2
     printf '  %s\n' "${zips[@]}" >&2
     exit 1
   }
-  echo "== unpacking $(basename "${zips[0]}") over $SRC"
+  echo "== unpacking ${#zips[@]} zip(s) over $SRC"
   rm -rf "$SRC"
   mkdir -p "$SRC"
-  unzip -q -o "${zips[0]}" -d "$SRC"
+  for z in "${zips[@]}"; do unzip -q -o "$z" -d "$SRC"; done
 fi
 
 [[ -d "$SRC" ]] || {
@@ -60,19 +67,8 @@ if [[ -f "$REPO/build/$NAME/TIMING_FAILED" && -z "${FLASH_ANYWAY:-}" ]]; then
   exit 1
 fi
 
-CORE="$(ls "$SRC/Cores")"
-
-# nullglob so a pattern with no match vanishes instead of ls treating it as a
-# literal filename and failing: this core ships .rbf_r, a sibling ships .rev,
-# and under `set -e -o pipefail` a failing ls took the whole script down even
-# though the bitstream it needed was right there.
-shopt -s nullglob
-cands=("$SRC/Cores/$CORE"/*.rbf_r "$SRC/Cores/$CORE"/*.rev)
-shopt -u nullglob
-[[ ${#cands[@]} -gt 0 ]] || { echo "no bitstream in $SRC/Cores/$CORE" >&2; exit 1; }
-RBF="$(basename -- "${cands[0]}")"
-
-echo "== flashing $CORE ($RBF) onto $SD"
+CORES=("$SRC"/Cores/*/)
+echo "== flashing $(for c in "${CORES[@]}"; do basename "$c"; done | paste -sd' ') onto $SD"
 
 # Platforms/_images/ is shared: every core that declares a platform id points
 # at the same file, so overwriting one here changes what every other core on
@@ -92,10 +88,22 @@ rsync -rt --no-perms --no-owner --no-group "${PLATIMG[@]}" --itemize-changes \
       | grep -E '^[>c]' | sed 's|^\([><c][a-zA-Z.+]*\) |\1 Platforms/_images/|' || true
 sync
 
-a="$(sha256sum "$SRC/Cores/$CORE/$RBF" | cut -c1-16)"
-b="$(sha256sum "$SD/Cores/$CORE/$RBF"  | cut -c1-16)"
-[[ "$a" == "$b" ]] || { echo "CHECKSUM MISMATCH: $a on disk, $b on the card" >&2; exit 1; }
-echo "== verified $RBF ($a)"
+# nullglob so a pattern with no match vanishes instead of ls treating it as a
+# literal filename and failing: this core ships .rbf_r, a sibling ships .rev,
+# and under `set -e -o pipefail` a failing ls took the whole script down even
+# though the bitstream it needed was right there.
+for c in "${CORES[@]}"; do
+  CORE="$(basename "$c")"
+  shopt -s nullglob
+  cands=("$c"*.rbf_r "$c"*.rev)
+  shopt -u nullglob
+  [[ ${#cands[@]} -gt 0 ]] || { echo "no bitstream in $SRC/Cores/$CORE" >&2; exit 1; }
+  RBF="$(basename -- "${cands[0]}")"
+  a="$(sha256sum "$SRC/Cores/$CORE/$RBF" | cut -c1-16)"
+  b="$(sha256sum "$SD/Cores/$CORE/$RBF"  | cut -c1-16)"
+  [[ "$a" == "$b" ]] || { echo "CHECKSUM MISMATCH in $CORE: $a on disk, $b on the card" >&2; exit 1; }
+  echo "== verified $CORE/$RBF ($a)"
+done
 
 if [[ -n "${NO_UNMOUNT:-}" ]]; then
   echo "== left mounted, NO_UNMOUNT is set. Eject before pulling the card."

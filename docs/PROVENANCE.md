@@ -77,8 +77,9 @@ beside the existing ones without collision: `tools/cheats/ggcht.py` beside
 
 ## Artwork
 
-`assets/icon.svg` is this project's. `make icon` renders it through
-ImageMagick and `tools/icon/genicon.py` into `pkg/Cores/kroy.GG/icon.bin`:
+`assets/icon-gg.svg`, `icon-sms.svg` and `icon-sg1000.svg` are this
+project's. `make icon` renders them through ImageMagick and
+`tools/icon/genicon.py` into `pkg/Cores/kroy.*/icon.bin`:
 36x36, one little-endian 16-bit word per pixel, intensity in the low byte,
 column major. The order was confirmed against shipped third-party icons on
 2026-09-14; a row-major file shows transposed on the Pocket.

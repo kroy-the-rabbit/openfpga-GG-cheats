@@ -4,13 +4,13 @@
     "data_slots": [
       {
         "name": "Cartridge",
-        "id": 1,
+        "id": 5,
         "required": true,
         "parameters": "0x109",
         "extensions": [
-          "gg"
+          "sg"
         ],
-        "address": "0x10000000",
+        "address": "0x60000000",
         "size_maximum": "0x400000"
       },
       {

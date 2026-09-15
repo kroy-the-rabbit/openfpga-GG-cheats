@@ -75,10 +75,11 @@ jobs:
         run: |
           tag="$GITHUB_REF_NAME"
           version="${tag#v}"
-          zip="kroy.GG_${version}.zip"
           mkdir -p dist && cd dist
-          gh release download "$tag" -p "$zip" -p BUILD.json -p SHA256SUMS -p report.txt
+          gh release download "$tag" -p "kroy.*_${version}.zip" -p BUILD.json -p SHA256SUMS -p report.txt
           sha256sum -c SHA256SUMS
-          unzip -p "$zip" Cores/kroy.GG/core.json \
-            | python3 -c "import json,sys; v=json.load(sys.stdin)['core']['metadata']['version']; print('stamped', v); sys.exit(v != '$version')"
-          echo "$tag: package present, checksums verified, version stamped."
+          for core in GG SMS SG1000; do
+            unzip -p "kroy.${core}_${version}.zip" "Cores/kroy.${core}/core.json" \
+              | python3 -c "import json,sys; v=json.load(sys.stdin)['core']['metadata']['version']; print('kroy.$core stamped', v); sys.exit(v != '$version')"
+          done
+          echo "$tag: three packages present, checksums verified, versions stamped."
